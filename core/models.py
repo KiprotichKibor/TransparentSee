@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Region(models.Model):
     name = models.CharField(max_length=255)
@@ -87,3 +89,30 @@ class CaseReport(models.Model):
 
     def __str__(self):
         return f"Case report for {self.investigation.report.title}"
+    
+class Badge(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    icon = models.ImageField(upload_to='badge_icons/')
+
+    def __str__(self):
+        return self.name
+    
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    bio = models.TextField()
+    location = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
+    badges = models.ManyToManyField(Badge, blank=True)
+    reputation_score = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user.username}'s profile"
+    
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()

@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status, permissions
-from .models import Region, Report, Evidence, Investigation, Contribution, CaseReport
+from .models import Region, Report, Evidence, Investigation, Contribution, CaseReport, UserProfile, Badge, ContributionEvidence
 from .serializers import RegionSerializer, ReportSerializer, EvidenceSerializer, InvestigationSerializer, ContributionSerializer, CaseReportSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
@@ -102,6 +102,30 @@ class ContributionViewSet(viewsets.ModelViewSet):
         request.data['anonymous'] = True
         return self.create(request)
     
+    @transaction.atomic
+    def perform_create(self, serializer):
+        contribution = serializer.save(user=self.request.user)
+
+        # Update user's reputation
+        profile = self.request.user.profile
+        profile.reputation_score += 5
+        profile.save()
+
+    @action(detail=True, methods=['post'])
+    def verify(self, request, pk=None):
+        contribution = self.get_object()
+        contribution.verified = True
+        contribution.save()
+
+        # Update user's reputation for verified contributuion
+        if contribution.user:
+            profile = contribution.user.profile
+            profile.reputation_score += 10
+            profile.save()
+
+        serializer = self.get_serializer(contribution)
+        return Response(serializer.data)
+    
 class CaseReportViewSet(viewsets.ModelViewSet):
     queryset = CaseReport.objects.all()
     serializer_class = CaseReportSerializer
@@ -142,3 +166,125 @@ class CaseReportViewSet(viewsets.ModelViewSet):
             return response
         else:
             return Response({'detail': 'PDF not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+class UserProfileViewSet(viewsets.ModelViewSet):
+    queryset = UserProfile.objects.all()
+    serializer_class = serializers.UserProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action in ['retrieve', 'list']:
+            permission_classes = [permissions.AllowAny]
+        else:
+            permission_classes = [permissions.IsAuthenticated]
+        return [permission() for permission in permission_classes]
+    
+    def get_queryset(self):
+        queryset = UserProfile.objects.all()
+        username = self.request.query_params.get('username', None)
+        if username is not None:
+            queryset = queryset.filter(user__username=username)
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def award_badge(self, request, pk=None):
+        profile = self.get_object()
+        badge_id = request.data.get('badge_id')
+
+        try:
+            badge = Badge.objects.get(pk=badge_id)
+        except Badge.DoesNotExist:
+            return Response({'detail': 'Badge not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        profile.badges.add(badge)
+        profile.save()
+
+        return Response({'detail': f'Badge {badge.name} awarded successfully.'})
+
+    @action(detail=True, methods=['post'])
+    def remove_badge(self, request, pk=None):
+        profile = self.get_object()
+        badge_id = request.data.get('badge_id')
+
+        try:
+            badge = Badge.objects.get(pk=badge_id)
+        except Badge.DoesNotExist:
+            return Response({'detail': 'Badge not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        profile.badges.remove(badge)
+        profile.save()
+
+        return Response({'detail': f'Badge {badge.name} removed successfully.'})
+    
+    @action(detail=True, methods=['post'])
+    def update_reputation(self, request, pk=None):
+        profile = self.get_object()
+        score_change = request.data.get('score_change', 0)
+
+        profile.reputation_score += score_change
+        profile.save()
+
+        return Response({'detail': 'Reputation updated successfully.', 'new_score': profile.reputation_score})
+    
+class BadgeViewSet(viewsets.ModelViewSet):
+    queryset = Badge.objects.all()
+    serializer_class = serializers.BadgeSerializer
+    permission_classes = [permissions.IsAdminUser]
+    
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [permissions.AllowAny]
+        else:
+            permission_classes = [permissions.IsAdminUser]
+        return [permission() for permission in permission_classes]
+    
+    @action(detail=True, methods=['get'])
+    def award_to_user(self, request, pk=None):
+        badge = self.get_object()
+        username = request.query_params.get('username')
+        if username is None:
+            return Response({'detail': 'Username not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = UserProfile.objects.get(user__username=username)
+        except UserProfile.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        user.badges.add(badge)
+        user.save()
+        
+        return Response({'detail': f'Badge {badge.name} awarded to {username} successfully.'})
+    
+    @action(detail=True, methods=['get'])
+    def remove_from_user(self, request, pk=None):
+        badge = self.get_object()
+        username = request.query_params.get('username')
+        if username is None:
+            return Response({'detail': 'Username not provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            user = UserProfile.objects.get(user__username=username)
+        except UserProfile.DoesNotExist:
+            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        user.badges.remove(badge)
+        user.save()
+        
+        return Response({'detail': f'Badge {badge.name} removed from {username} successfully.'})
+    
+    @action(detail=True, methods=['get'])
+    def list_users(self, request, pk=None):
+        badge = self.get_object()
+        users = UserProfile.objects.filter(badges=badge)
+        serializer = serializers.UserProfileSerializer(users, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def list_badges(self, request, pk=None):
+        badge = self.get_object()
+        users = UserProfile.objects.filter(badges=badge)
+        serializer = serializers.UserProfileSerializer(users, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def list_badges(self, request, pk=None):

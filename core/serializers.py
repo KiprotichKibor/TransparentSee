@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Region, Report, Evidence, Investigation, Contribution, ContributionEvidence, CaseReport
+from .models import Region, Report, Evidence, Investigation, Contribution, ContributionEvidence, CaseReport, UserProfile, Badge
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -52,7 +52,7 @@ class ContributionEvidenceSerializer(serializers.ModelSerializer):
         fields = ['id', 'file', 'uploaded_at']
 
 class ContributionSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
+    user = UserSerializer(read_only=True)
     evidences = ContributionEvidenceSerializer(many=True, read_only=True)
     evidence_files = serializers.ListField(
         child=serializers.FileField(max_length=100000, allow_empty_file=False, use_url=False),
@@ -92,3 +92,39 @@ class CaseReportSerializer(serializers.ModelSerializer):
         model = CaseReport
         fields = ['id', 'investigation', 'generated_by', 'created_at', 'updated_at', 'content', 'pdf_file']
         read_only_fields = ['generated_by', 'created_at', 'updated_at', 'pdf_file']
+
+class BadgeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Badge
+        fields = ['id', 'name', 'description', 'icon']
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    badges = BadgeSerializer(many=True, read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'badges', 'reputation_score', 'bio', 'location', 'username', 'email']
+
+class UserSerializer(serializers.ModelSerializer):
+    profile = UserProfileSerializer()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'profile']
+        read_only_fields = ['profile']
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', {})
+        profile = instance.profile
+
+        instance.email = validated_data.get('email', instance.email)
+        instance.username = validated_data.get('username', instance.username)
+        instance.save()
+
+        profile.bio = profile_data.get('bio', profile.bio)
+        profile.location = profile_data.get('location', profile.location)
+        profile.save()
+
+        return instance

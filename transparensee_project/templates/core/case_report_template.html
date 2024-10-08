@@ -1,0 +1,46 @@
+<!-- templates/core/case_report_template.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Case Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        h1, h2 { color: #2c3e50; }
+        .section { margin-bottom: 20px; }
+        .contribution { margin-bottom: 10px; padding: 10px; background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <h1>Case Report: {{ report.title }}</h1>
+    
+    <div class="section">
+        <h2>Report Details</h2>
+        <p><strong>Description:</strong> {{ report.description }}</p>
+        <p><strong>Region:</strong> {{ report.region.name }}</p>
+        <p><strong>Date Reported:</strong> {{ report.created_at|date:"F d, Y" }}</p>
+    </div>
+
+    <div class="section">
+        <h2>Investigation Details</h2>
+        <p><strong>Status:</strong> {{ investigation.get_status_display }}</p>
+        <p><strong>Date Started:</strong> {{ investigation.created_at|date:"F d, Y" }}</p>
+    </div>
+
+    <div class="section">
+        <h2>Contributions</h2>
+        {% for contribution in contributions %}
+        <div class="contribution">
+            <p><strong>{{ contribution.get_contribution_type_display }}{% if contribution.verified %} (Verified){% endif %}</strong></p>
+            <p>{{ contribution.content }}</p>
+            <p><em>Submitted on {{ contribution.created_at|date:"F d, Y" }}</em></p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="section">
+        <p><strong>Report Generated:</strong> {{ generated_at|date:"F d, Y H:i" }}</p>
+    </div>
+</body>
+</html>

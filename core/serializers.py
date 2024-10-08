@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Region, Report, Evidence, Investigation, Contribution, ContributionEvidence
+from .models import Region, Report, Evidence, Investigation, Contribution, ContributionEvidence, CaseReport
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -86,3 +86,9 @@ class InvestigationSerializer(serializers.ModelSerializer):
         model = Investigation
         fields = ['id', 'report', 'status', 'created_at', 'updated_at', 'contributions']
         read_only_fields = ['created_at', 'updated_at']
+
+class CaseReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CaseReport
+        fields = ['id', 'investigation', 'generated_by', 'created_at', 'updated_at', 'content', 'pdf_file']
+        read_only_fields = ['generated_by', 'created_at', 'updated_at', 'pdf_file']

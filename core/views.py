@@ -1,12 +1,16 @@
 from rest_framework import viewsets, status, permissions
-from .models import Region, Report, Evidence, Investigation, Contribution
-from .serializers import RegionSerializer, ReportSerializer, EvidenceSerializer, InvestigationSerializer, ContributionSerializer
+from .models import Region, Report, Evidence, Investigation, Contribution, CaseReport
+from .serializers import RegionSerializer, ReportSerializer, EvidenceSerializer, InvestigationSerializer, ContributionSerializer, CaseReportSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
-from .utils import moderate_content
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML
+from .utils import moderate_content, generate_case_report_content
 from core import serializers
+from io import BytesIO
 
 class RegionViewSet(viewsets.ModelViewSet):
     queryset = Region.objects.all()
@@ -97,3 +101,44 @@ class ContributionViewSet(viewsets.ModelViewSet):
     def contribute_anonymously(self, request):
         request.data['anonymous'] = True
         return self.create(request)
+    
+class CaseReportViewSet(viewsets.ModelViewSet):
+    queryset = CaseReport.objects.all()
+    serializer_class = CaseReportSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=False, methods=['POST'])
+    @transaction.atomic
+    def generate(self, request):
+        investigation_id = request.data.get('investigation')
+        investigation = Investigation.objects.get(pk=investigation_id)
+
+        content = generate_case_report_content(investigation)
+
+        case_report = CaseReport.objects.create(
+            investigation=investigation,
+            generated_by=request.user,
+            content=content
+        )
+
+        # Generate PDF
+        html_string = render_to_string('core/case_report_template.html', {'content': content})
+        html = HTML(string=html_string)
+        result = html.write_pdf()
+        
+        # Save PDF to case_report
+        pdf_file = BytesIO(result)
+        case_report.pdf_file.save(f'case_report_{case_report.id}.pdf', pdf_file)
+        
+        serializer = self.get_serializer(case_report)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['get'])
+    def download_pdf(self, request, pk=None):
+        case_report = self.get_object()
+        if case_report.pdf_file:
+            response = HttpResponse(case_report.pdf_file, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{case_report.pdf_file.name}"'
+            return response
+        else:
+            return Response({'detail': 'PDF not found.'}, status=status.HTTP_404_NOT_FOUND)

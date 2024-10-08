@@ -76,3 +76,14 @@ class ContributionEvidence(models.Model):
 
     def __str__(self):
         return f"Evidence for {self.contribution}"
+    
+class CaseReport(models.Model):
+    investigation = models.ForeignKey(Investigation, on_delete=models.CASCADE, related_name='case_reports')
+    generated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    pdf_file = models.FileField(upload_to='case_reports/', null=True, blank=True)
+
+    def __str__(self):
+        return f"Case report for {self.investigation.report.title}"

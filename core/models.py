@@ -37,14 +37,42 @@ class Evidence(models.Model):
         return f"Evidence for {self.report.title}"
 
 class Investigation(models.Model):
-    report = models.ForeignKey(Report, on_delete=models.CASCADE)
-    status = models.CharField(max_length=50, default='Open')
+    STATUS_CHOICES = [
+        ('Open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('Closed', 'Closed'),
+    ]
+
+    report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='investigation')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Open')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return f"Investigation for {self.report.title}"
+
 class Contribution(models.Model):
-    investigation = models.ForeignKey(Investigation, on_delete=models.CASCADE)
+    CONTRIBUTION_TYPES = [
+        ('comment', 'Comment'),
+        ('evidence', 'Evidence'),
+        ('verification', 'Verification'),
+    ]
+
+    investigation = models.ForeignKey(Investigation, on_delete=models.CASCADE, related_name='contributions')
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     content = models.TextField()
+    contribution_type = models.CharField(max_length=50, choices=CONTRIBUTION_TYPES, default='comment')
     anonymous = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    verified = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.get_contribution_type_display()} for {self.investigation.report.title}"
+    
+class ContributionEvidence(models.Model):
+    contribution = models.OneToOneField(Contribution, on_delete=models.CASCADE, related_name='evidences')
+    file = models.FileField(upload_to='contribution_evidence/')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Evidence for {self.contribution}"

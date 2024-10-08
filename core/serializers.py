@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Region, Report, Evidence, Investigation, Contribution
+from .models import Region, Report, Evidence, Investigation, Contribution, ContributionEvidence
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -46,16 +46,43 @@ class ReportSerializer(serializers.ModelSerializer):
 
         return report
 
+class ContributionEvidenceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContributionEvidence
+        fields = ['id', 'file', 'uploaded_at']
+
+class ContributionSerializer(serializers.ModelSerializer):
+    user = serializers.SerializerMethodField()
+    evidences = ContributionEvidenceSerializer(many=True, read_only=True)
+    evidence_files = serializers.ListField(
+        child=serializers.FileField(max_length=100000, allow_empty_file=False, use_url=False),
+        write_only=True, required=False
+    )
+
+    class Meta:
+        model = Contribution
+        fields = ['id', 'investigation', 'user', 'content', 'contribution_type', 'anonymous', 'created_at', 'verified', 'evidences', 'evidence_files']
+        read_only_fields = ['verified']
+
+    def get_user(self, obj):
+        if obj.anonymous:
+            return None
+        return UserSerializer(obj.user).data
+    
+    def create(self, validated_data):
+        evidence_files = validated_data.pop('evidence_files', None)
+        contribution = Contribution.objects.create(**validated_data)
+
+        if evidence_files:
+            for evidence_file in evidence_files:
+                ContributionEvidence.objects.create(contribution=contribution, file=evidence_file)
+
+        return contribution
+    
 class InvestigationSerializer(serializers.ModelSerializer):
-    report = ReportSerializer(read_only=True)
+    contributions = ContributionSerializer(many=True, read_only=True)
     
     class Meta:
         model = Investigation
-        fields = '__all__'
-
-class ContributionSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = Contribution
-        fields = '__all__'
+        fields = ['id', 'report', 'status', 'created_at', 'updated_at', 'contributions']
+        read_only_fields = ['created_at', 'updated_at']

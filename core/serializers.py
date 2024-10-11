@@ -8,9 +8,14 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'email']
 
 class RegionSerializer(serializers.ModelSerializer):
+    children = serializers.SerializerMethodField()
+
     class Meta:
         model = Region
-        fields = '__all__'
+        fields = ['id', 'name', 'region_type', 'parent', 'children']
+
+    def get_children(self, obj):
+        return RegionSerializer(obj.children.all(), many=True).data
 
 class EvidenceSerializer(serializers.ModelSerializer):
     class Meta:

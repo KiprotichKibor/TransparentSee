@@ -4,11 +4,22 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 class Region(models.Model):
+    REGION_TYPES = [
+        ('country', 'Country'),
+        ('county', 'County'),
+        ('subcounty', 'Sub-County'),
+        ('ward', 'Ward'),
+    ]
+
     name = models.CharField(max_length=255)
-    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
+    region_type = models.CharField(max_length=50, choices=REGION_TYPES, default='country')
+    parent = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
 
     def __str__(self):
-        return self.name
+        return f"{self.get_region_type_display()} - {self.name}"
+    
+    class Meta:
+        unique_together = ('name', 'region_type', 'parent')
 
 class Report(models.Model):
     STATUS_CHOICES = [

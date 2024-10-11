@@ -31,7 +31,7 @@ class Report(models.Model):
         return self.title
 
 class Evidence(models.Model):
-    report = models.ForeignKey(Report, on_delete=models.CASCADE)
+    report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='evidences')
     file = models.FileField(upload_to='evidence/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
@@ -45,13 +45,45 @@ class Investigation(models.Model):
         ('Closed', 'Closed'),
     ]
 
-    report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='investigation')
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Open')
+    report = models.OneToOneField(Report, on_delete=models.CASCADE, related_name='investigation')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='open')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Investigation for {self.report.title}"
+    
+    def assign_role(self, user_id, role):
+        user = User.objects.get(id=user_id)
+        InvestigationRole.objects.create(investigation=self, user=user, role=role)
+
+    def create_task(self, task_data):
+        return Task.objects.create(investigation=self, **task_data)
+    
+class InvestigationRole(models.Model):
+    ROLE_CHOICES = [
+        ('lead', 'Lead Investigator'),
+        ('contributor', 'Contributor'),
+        ('reviewer', 'Reviewer'),
+    ]
+
+    investigation = models.ForeignKey(Investigation, on_delete=models.CASCADE, related_name='roles')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='contributor')
+
+    class Meta:
+        unique_together = ('investigation', 'user')
+
+class Task(models.Model):
+    investigation = models.ForeignKey(Investigation, on_delete=models.CASCADE, related_name='tasks')
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    due_date = models.DateTimeField()
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    completed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
 
 class Contribution(models.Model):
     CONTRIBUTION_TYPES = [
@@ -67,6 +99,7 @@ class Contribution(models.Model):
     anonymous = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     verified = models.BooleanField(default=False)
+    votes = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.get_contribution_type_display()} for {self.investigation.report.title}"
@@ -80,12 +113,20 @@ class ContributionEvidence(models.Model):
         return f"Evidence for {self.contribution}"
     
 class CaseReport(models.Model):
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('under_review', 'Under Review'),
+        ('published', 'Published'),
+    ]
+
     investigation = models.ForeignKey(Investigation, on_delete=models.CASCADE, related_name='case_reports')
     generated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     content = models.TextField()
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='draft')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     pdf_file = models.FileField(upload_to='case_reports/', null=True, blank=True)
+    docx_file = models.FileField(upload_to='case_reports/', null=True, blank=True)
 
     def __str__(self):
         return f"Case report for {self.investigation.report.title}"
@@ -104,9 +145,41 @@ class UserProfile(models.Model):
     location = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
     badges = models.ManyToManyField(Badge, blank=True)
     reputation_score = models.IntegerField(default=0)
+    privacy_settings = models.JSONField(default=dict)
 
     def __str__(self):
         return f"{self.user.username}'s profile"
+    
+    def calculate_level(self):
+        level = self.reputation_score // 100
+        next_level_threshold = (level + 1) * 100
+        return level, next_level_threshold
+    
+    def update_reputation(self, points):
+        self.reputation_score += points
+        self.save()
+
+    def update_privacy_settings(self, settings):
+        self.privacy_settings.update(settings)
+        self.save()
+    
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
+
+class UserActivity(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activities')
+    activity_type = models.CharField(max_length=255)
+    description = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.activity_type}"
     
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Region, Report, Evidence, Investigation, Contribution, ContributionEvidence, CaseReport, UserProfile, Badge
+from .models import Region, Report, Evidence, Investigation, InvestigationRole, Task, Contribution, ContributionEvidence, CaseReport, UserProfile, Badge, UserActivity
 from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -45,6 +45,18 @@ class ReportSerializer(serializers.ModelSerializer):
                 Evidence.objects.create(report=report, file=evidence_file)
 
         return report
+    
+class TaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = '__all__'
+
+class InvestigationRoleSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = InvestigationRole
+        fields = ['id', 'user', 'role']
 
 class ContributionEvidenceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -61,8 +73,8 @@ class ContributionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Contribution
-        fields = ['id', 'investigation', 'user', 'content', 'contribution_type', 'anonymous', 'created_at', 'verified', 'evidences', 'evidence_files']
-        read_only_fields = ['verified']
+        fields = ['id', 'investigation', 'user', 'content', 'contribution_type', 'anonymous', 'created_at', 'verified', 'evidences', 'evidence_files', 'votes']
+        read_only_fields = ['verified', 'votes', 'created_at']
 
     def get_user(self, obj):
         if obj.anonymous:
@@ -80,18 +92,20 @@ class ContributionSerializer(serializers.ModelSerializer):
         return contribution
     
 class InvestigationSerializer(serializers.ModelSerializer):
+    roles = InvestigationRoleSerializer(many=True, read_only=True) 
+    tasks = TaskSerializer(many=True, read_only=True)
     contributions = ContributionSerializer(many=True, read_only=True)
     
     class Meta:
         model = Investigation
-        fields = ['id', 'report', 'status', 'created_at', 'updated_at', 'contributions']
+        fields = ['id', 'report', 'status', 'created_at', 'updated_at', 'contributions', 'roles', 'tasks']
         read_only_fields = ['created_at', 'updated_at']
 
 class CaseReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = CaseReport
-        fields = ['id', 'investigation', 'generated_by', 'created_at', 'updated_at', 'content', 'pdf_file']
-        read_only_fields = ['generated_by', 'created_at', 'updated_at', 'pdf_file']
+        fields = ['id', 'investigation', 'generated_by', 'created_at', 'updated_at', 'content', 'pdf_file', 'docx_file', 'status']
+        read_only_fields = ['generated_by', 'created_at', 'updated_at', 'pdf_file', 'docx_file']
 
 class BadgeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -105,7 +119,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'badges', 'reputation_score', 'bio', 'location', 'username', 'email']
+        fields = ['id', 'badges', 'reputation_score', 'bio', 'location', 'username', 'email', 'privacy_settings']
+        read_only_fields = ['reputation_score']
 
 class UserSerializer(serializers.ModelSerializer):
     profile = UserProfileSerializer()
@@ -128,3 +143,9 @@ class UserSerializer(serializers.ModelSerializer):
         profile.save()
 
         return instance
+    
+class UserActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserActivity
+        fields = ['id', 'user', 'activity_type', 'timestamp', 'description']
+        read_only_fields = ['timestamp', 'user']

@@ -29,4 +29,34 @@ export const updateReport = async (id: number, reportData: any) => {
     return response.data;
 };
 
+export const submitReport = async (reportData: any) => {
+    const response = await api.post('/reports', reportData);
+    return response.data;
+};
+
+export const getInvestigations = async () => {
+    const response = await api.get('/investigations');
+    return response.data;
+};
+
+export const createInvestigation = async (investigationData: any) => {
+    const response = await api.post('/investigations', investigationData);
+    return response.data;
+};
+
+export const deleteInvestigation = async (id: number) => {
+    const response = await api.delete(`/investigations/${id}`);
+    return response.data;
+};
+
+export const updateInvestigation = async (id: number, investigationData: any) => {
+    const response = await api.put(`/investigations/${id}`, investigationData);
+    return response.data;
+};
+
+export const getUserProfile = async () => {
+    const response = await api.get('/profile');
+    return response.data;
+};
+
 export default api;

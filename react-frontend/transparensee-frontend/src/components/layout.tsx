@@ -37,6 +37,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <StyledLink to="/">Home</StyledLink>
             <StyledLink to="/reports">Reports</StyledLink>
             <StyledLink to="/investigations">Investigations</StyledLink>
+            <StyledLink to="/profile">Profile</StyledLink>
+            <StyledLink to="/submit-report">Submit Report</StyledLink>
           </Nav>
         </Header>
         <Main>{children}</Main>

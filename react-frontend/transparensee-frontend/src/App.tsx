@@ -6,6 +6,8 @@ import Investigations from './pages/Investigations';
 import Layout from './components/layout';
 import UserProfile from './pages/UserProfile';
 import SubmitReport from './pages/SubmitReport';
+import Login from './components/Login';
+import Registration from './components/Registration';
 
 const App: React.FC = () => {
     return (
@@ -17,6 +19,8 @@ const App: React.FC = () => {
                     <Route path="/investigations" element={<Investigations />} />
                     <Route path="/profile" element={<UserProfile />} />
                     <Route path="/submit-report" element={<SubmitReport />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Registration />} />
                 </Routes>
             </Layout>
         </Router>

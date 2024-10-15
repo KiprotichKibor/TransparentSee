@@ -3,14 +3,15 @@ from .models import CustomUser, Evidence, UserProfile, Region, Report, Investiga
 from django.contrib.auth.models import User
 
 class CustomUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email']
+        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name']
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
-        user = CustomUser.objects.create_user(**validated_data)
-        return user
+        return CustomUser.objects.create_user(**validated_data)
     
 class UserProfileSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer(read_only=True)

@@ -11,6 +11,7 @@ from .views import (
     CaseReportViewSet,
     BadgeViewSet,
 )
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 router = DefaultRouter()
 router.register(r'users', CustomUserViewSet)
@@ -25,4 +26,5 @@ router.register(r'badges', BadgeViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('api-auth/', include('rest_framework.urls')),
 ]

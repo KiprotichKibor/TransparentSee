@@ -117,8 +117,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'transparensee_db',
-        'USER': 'transparensee_user',
-        'PASSWORD': 'transparensee_password',
+        'USER': 'kibor',
+        'PASSWORD': 'password',
         'HOST': 'localhost',
         'PORT': '5432',
     }

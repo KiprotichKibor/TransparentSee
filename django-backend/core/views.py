@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
 from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -37,25 +38,25 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
         return Response({
-            'user': CustomUserSerializer(user, context=self.get_serializer_context()).data,
+            'user': CustomUserSerializer(user).data,
             'message': 'User created successfully.'
         }, status=status.HTTP_201_CREATED)
     
     @action(detail=False, methods=['post'])
     def login(self, request):
-        username = request.data.get('username')
+        email = request.data.get('email')
         password = request.data.get('password')
         
-        if username is None or password is None:
+        if email is None or password is None:
             return Response({'detail': 'Please provide both username and password.'}, status=status.HTTP_400_BAD_REQUEST)
         
-        user = CustomUser.objects.filter(username=username).first()
+        user = CustomUser.objects.filter(email=email).first()
         if user is None:
             return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         
         if not user.check_password(password):
             return Response({'detail': 'Invalid credentials.'}, status=status.HTTP_400_BAD_REQUEST)
-        
+
         refresh = RefreshToken.for_user(user)
         return Response({
             'refresh': str(refresh),

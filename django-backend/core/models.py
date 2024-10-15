@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db.models.signals import post_save
 from django.utils.translation import gettext_lazy as _
 from django.dispatch import receiver
@@ -22,8 +22,53 @@ class Region(models.Model):
     class Meta:
         unique_together = ('name', 'region_type', 'parent')
 
-class CustomUser(AbstractUser):
+class CustomUserManager(BaseUserManager):
+    def create_user(self, email, username, first_name, last_name, password=None):
+        if not email:
+            raise ValueError('Users must have an email address')
+        if not username:
+            raise ValueError('Users must have a username')
+        if not first_name:
+            raise ValueError('Users must have a first name')
+        if not last_name:
+            raise ValueError('Users must have a last name')
+
+        user = self.model(
+            email=self.normalize_email(email),
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+        )
+
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, username, first_name, last_name, password):
+        user = self.create_user(
+            email=self.normalize_email(email),
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            password=password,
+        )
+        user.is_staff = True
+        user.is_superuser = True
+        user.save(using=self._db)
+        return user
+
+class CustomUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(_('email address'), unique=True)
+    username = models.CharField(max_length=150, unique=True)
+    first_name = models.CharField(max_length=150)
+    last_name = models.CharField(max_length=150)
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    objects = CustomUserManager()
+
+    USERNAME_FIELD = 'email'
 
     class Meta:
         db_table = 'auth_user'
@@ -40,7 +85,7 @@ class CustomUser(AbstractUser):
 class UserProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='userprofile')
     bio = models.TextField(blank=True)
-    location = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
     reputation_score = models.IntegerField(default=0)
     privacy_settings = models.JSONField(default=dict)
 
@@ -61,13 +106,10 @@ class UserProfile(models.Model):
         self.save()
 
 @receiver(post_save, sender=CustomUser)
-def create_user_profile(sender, instance, created, **kwargs):
+def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
         UserProfile.objects.create(user=instance)
-
-@receiver(post_save, sender=CustomUser)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+    instance.userprofile.save()
 
 class Report(models.Model):
     STATUS_CHOICES = [

@@ -1,36 +1,59 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { setReports, setLoading, setError } from '../store/reportsSlice';
 import { getReports } from '../services/api';
 import styled from 'styled-components';
 
-const ReportCard = styled.div`
+interface Report {
+    id: number;
+    title: string;
+    description: string;
+    status: string;
+    created_at: string;
+}
+
+const ReportContainer = styled.div`
+    margin-bottom: 20px;
+    padding: 15px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    padding: 1rem;
-    margin: 1rem;
+`;
+
+const ReportTitle = styled.h2`
+    color: #2c3e50;
+    margin-bottom: 10px;
+`;
+
+const ReportMeta = styled.div`
+    color: #7f8c8d;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+`;
+
+const ReportDescription = styled.p`
+    color: #34495e;
 `;
 
 const Reports: React.FC = () => {
-    const dispatch = useDispatch<AppDispatch>();
-    const { reports, loading, error } = useSelector((state: RootState) => state.report);
+    const [reports, setReports] = useState<Report[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchReports = async () => {
-            dispatch(setLoading(true));
             try {
                 const data = await getReports();
-                dispatch(setReports(data));
+                setReports(data);
+                setLoading(false);
             } catch (error) {
-                dispatch(setError('Failed to fetch reports'));
-            } finally {
-                dispatch(setLoading(false));
+                setError('Failed to fetch reports');
+                setLoading(false);
             }
         };
 
         fetchReports();
-    }, [dispatch]);
+    }, []);
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
@@ -39,10 +62,14 @@ const Reports: React.FC = () => {
         <div>
             <h1>Reports</h1>
             {reports.map((report) => (
-                <ReportCard key={report.id}>
-                    <h2>{report.title}</h2>
-                    <p>{report.description}</p>
-                </ReportCard>
+                <ReportContainer key={report.id}>
+                    <ReportTitle>{report.title}</ReportTitle>
+                    <ReportMeta>
+                        <div>Status: {report.status}</div>
+                        <div>Created at: {report.created_at}</div>
+                    </ReportMeta>
+                    <ReportDescription>{report.description}</ReportDescription>
+                </ReportContainer>
             ))}
         </div>
     );

@@ -43,8 +43,8 @@ const Reports: React.FC = () => {
     useEffect(() => {
         const fetchReports = async () => {
             try {
-                const data = await getReports();
-                setReports(data);
+                const response = await getReports();
+                setReports(response.data);
                 setLoading(false);
             } catch (error) {
                 setError('Failed to fetch reports');

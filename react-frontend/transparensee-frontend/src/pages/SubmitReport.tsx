@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { submitReport } from '../services/api';
+import { createReport } from '../services/api';
 
 const FormContainer = styled.div`
     max-width: 600px;
@@ -54,7 +54,7 @@ const SubmitReport: React.FC = () => {
         e.preventDefault();
 
         try {
-            await submitReport({ title, description, region });
+            await createReport({ title, description, region });
             alert('Report submitted successfully');
             setTitle('');
             setDescription('');

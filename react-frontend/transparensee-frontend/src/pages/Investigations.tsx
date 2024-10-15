@@ -40,8 +40,8 @@ const Investigations: React.FC = () => {
     useEffect(() => {
         const fetchInvestigations = async () => {
             try {
-                const data = await getInvestigations();
-                setInvestigations(data);
+                const response = await getInvestigations();
+                setInvestigations(response.data);
                 setLoading(false);
             } catch (error) {
                 setError('Failed to fetch investigations');

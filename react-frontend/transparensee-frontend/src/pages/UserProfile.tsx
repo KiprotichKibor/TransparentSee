@@ -45,8 +45,8 @@ const UserProfile: React.FC = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const data = await getUserProfile();
-                setUserProfile(data);
+                const response = await getUserProfile();
+                setUserProfile(response.data);
                 setLoading(false);
             } catch (error) {
                 setError('Failed to fetch user profile');

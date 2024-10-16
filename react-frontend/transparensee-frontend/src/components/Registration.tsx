@@ -23,27 +23,50 @@ const Button = styled.button`
     cursor: pointer;
 `;
 
+const ErrorMessage = styled.div`
+    color: red;
+`;
+
 const Registration: React.FC = () => {
-    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
 
         try {
-            await register({ username, email, password });
-            alert('Registration successful');
+            await register({ email, username, first_name: firstName, last_name: lastName, password });
+            alert('Registration successful! Please login.');
             navigate('/login');
-        } catch (error) {
-            alert('Registration failed');
+        } catch (error: any) {
+            if (error.response) {
+                setError(error.response.data.detail || 'Registration failed. Please try again.');
+            } else if (error.request) {
+                setError('No response from server. Please try again later.');
+            } else {
+                setError('An unexpected error occurred. Please try again later.');
+            }
+            console.error('Registration error:', error);
         }
     };
 
     return (
         <Form onSubmit={handleSubmit}>
             <h2>Register</h2>
+            {error && <ErrorMessage>{error}</ErrorMessage>}
+            <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+            />
             <Input
                 type="text"
                 placeholder="Username"
@@ -52,10 +75,17 @@ const Registration: React.FC = () => {
                 required
             />
             <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="First Name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                required
+            />
+            <Input
+                type="text"
+                placeholder="Last Name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
                 required
             />
             <Input

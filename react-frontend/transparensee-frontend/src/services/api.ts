@@ -21,8 +21,17 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
   );
 
-  export const register = (userData: any) => api.post('/register/', userData);
-  export const login = (credentials: any) => api.post('/token/', credentials);
+  export const register = (userData: {
+    email: string;
+    username: string;
+    first_name: string;
+    last_name: string;
+    password: string;
+  }) => api.post('/register/', userData);
+  export const login = (credentials: {
+    email: string;
+    password: string;
+  }) => api.post('/token/', credentials);
   export const logout = () => api.post('/logout/');
   
   export const getReports = () => api.get('/reports/');

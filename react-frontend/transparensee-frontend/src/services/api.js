@@ -55,4 +55,28 @@ export const updateProfile = async (username, data) => {
     return await api.patch(`/users-profiles/${username}/`, data);
 }
 
+export const getNotifications = async () => {
+    return await api.get('/notifications/');
+}
+
+export const markNotificationAsRead = async (id) => {
+    return await api.post(`/notifications/${id}/read/`);
+}
+
+export const getComments = async (reportId) => {
+    return await api.get(`/reports/${reportId}/comments/`);
+}
+
+export const createComment = async (reportId, data) => {
+    return await api.post(`/reports/${reportId}/comments/`, data);
+}
+
+export const getStats = async () => {
+    return await api.get('/stats/');
+}
+
+export const getUserRole = async () => {
+    return await api.get('/user-role/');
+}
+
 export default api;

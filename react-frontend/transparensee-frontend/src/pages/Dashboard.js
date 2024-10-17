@@ -6,21 +6,22 @@ import ReportCard from '../components/ReportCard';
 import InvestigationCard from '../components/InvestigationCard';
 import Pagination from '../components/Pagination';
 import SearchBar from '../components/SearchBar';
+import DataVisualization from '../components/DataVisualization';
 
 const Dashboard = () => {
     const [reports, setReports] = useState([]);
     const [investigations, setInvestigations] = useState([]);
     const [reportPage, setReportPage] = useState(1);
     const [investigationPage, setInvestigationPage] = useState(1);
-    const [reportSearch, setReportSearch] = useState('');
-    const [investigationSearch, setInvestigationSearch] = useState('');
+    const [reportFilters, setReportFilters] = useState('');
+    const [investigationFilters, setInvestigationFilters] = useState('');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const { user } = useContext(AuthContext);
 
     const fetchReports = async () => {
         try {
-            const response = await getReports(reportPage, reportSearch);
+            const response = await getReports({ page: reportPage, ...reportFilters });
             setReports(response.data.results);
         } catch (err) {
             setError('Failed to fetch reports');
@@ -29,7 +30,7 @@ const Dashboard = () => {
 
     const fetchInvestigations = async () => {
         try {
-            const response = await getInvestigations(investigationPage, investigationSearch);
+            const response = await getInvestigations({ page: investigationPage, ...investigationFilters });
             setInvestigations(response.data.results);
         } catch (err) {
             setError('Failed to fetch investigations');
@@ -43,7 +44,7 @@ const Dashboard = () => {
             setLoading(false);
         };
         fetchData();
-    }, [reportPage, reportSearch, investigationPage, investigationSearch]);
+    }, [reportPage, reportFilters, investigationPage, investigationFilters]);
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div className='alert alert-danger'>{error}</div>;
@@ -51,10 +52,11 @@ const Dashboard = () => {
     return (
         <div className='container mt-5'>
             <h2>Welcome, {user.username}!</h2>
+            <DataVisualization />
             <div className='row mt-4'>
                 <div className='col-md-6'>
                     <h3>Recent Reports</h3>
-                    <SearchBar onSearch={setReportSearch} placeholder='Search reports...' />
+                    <SearchBar onSearch={setReportFilters} type='report' />
                     {reports.map((report) => (
                         <ReportCard key={report.id} report={report} />
                     ))}
@@ -67,14 +69,14 @@ const Dashboard = () => {
                 </div>
                 <div className='col-md-6'>
                     <h3>Active Investigations</h3>
-                    <SearchBar onSearch={setInvestigationSearch} placeholder='Search investigations...' />
-                    {investigations.map((investigation) => (
+                    <SearchBar onSearch={setInvestigationFilters} type='investigation' />
+                    {investigations.results.map((investigation) => (
                         <InvestigationCard key={investigation.id} investigation={investigation} />
                     ))}
                     <Pagination
                         currentPage={investigationPage}
                         onPageChange={setInvestigationPage}
-                        totalPages={Math.ceil(investigations.length / 10)}
+                        totalPages={Math.ceil(investigations.count / 10)}
                     />
                 </div>
             </div>

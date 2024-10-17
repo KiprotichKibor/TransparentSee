@@ -31,3 +31,11 @@ class CanVerifyContribution(permissions.BasePermission):
 class CanManageUserProfile(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return obj.user == request.user
+    
+class IsAdminUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.role.role == 'admin'
+    
+class IsModeratorUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.is_authenticated and request.user.role.role == 'moderator'

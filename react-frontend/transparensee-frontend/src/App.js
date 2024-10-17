@@ -9,6 +9,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import SubmitReport from './pages/SubmitReport';
 import Investigation from './pages/Investigation';
+import UserProfile from './pages/UserProfile';
 
 function App() {
     return (
@@ -23,6 +24,7 @@ function App() {
                     <Route path="/dashboard" component={Dashboard} />
                     <Route path="/submit-report" component={SubmitReport} />
                     <Route path="/investigation/:id" component={Investigation} />
+                    <Route path="/profile/:username" component={UserProfile} />
                 </Switch>
                 <Footer />
             </div>

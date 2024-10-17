@@ -10,6 +10,8 @@ from .views import (
     EvidenceViewSet,
     CaseReportViewSet,
     BadgeViewSet,
+    NotificationViewSet,
+    AdminViewSet,
 )
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -23,6 +25,8 @@ router.register(r'investigations', InvestigationViewSet)
 router.register(r'contributions', ContributionViewSet)
 router.register(r'case-reports', CaseReportViewSet)
 router.register(r'badges', BadgeViewSet)
+router.register(r'notifications', NotificationViewSet)
+router.register(r'admin', AdminViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),

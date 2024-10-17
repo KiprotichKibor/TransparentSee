@@ -27,22 +27,6 @@ def enhanced_content_moderation(content):
         if re.search(r'\b' + word + r'\b', content, re.IGNORECASE):
             return False
     return True
-
-'''
-def generate_case_report_content(investigation):
-
-    report = investigation.report
-    contributions = Contribution.objects.filter(investigation=investigation).order_by('created_at')
-
-    context = {
-        'report': report,
-        'investigation': investigation,
-        'contributions': contributions,
-        'generated_at': timezone.now()
-    }
-
-    return render_to_string('core/case_report_template.html', context)
-'''
     
 def generate_report_content(case_report, template='default'):
     '''

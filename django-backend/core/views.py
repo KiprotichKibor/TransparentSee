@@ -1,8 +1,8 @@
 from tokenize import TokenError
 from django.forms import ValidationError
 from rest_framework import viewsets, status, permissions
-from .models import CustomUser, Region, Report, Evidence, Investigation, Contribution, CaseReport, UserActivity, Badge, UserProfile
-from .serializers import CustomUserSerializer, RegionSerializer, ReportSerializer, EvidenceSerializer, InvestigationSerializer, ContributionSerializer, CaseReportSerializer, UserProfileSerializer
+from .models import CustomUser, Region, Report, Evidence, Investigation, Contribution, CaseReport, UserActivity, Badge, UserProfile, UserRole, Notification, Comment
+from .serializers import CustomUserSerializer, RegionSerializer, ReportSerializer, EvidenceSerializer, InvestigationSerializer, ContributionSerializer, CaseReportSerializer, UserProfileSerializer, NotificationSerializer, CommentSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -11,6 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
@@ -18,7 +19,7 @@ from django.views.decorators.cache import cache_page
 from django_ratelimit.decorators import ratelimit
 from weasyprint import HTML
 from .utils import generate_report_content, enhanced_content_moderation, generate_report_pdf, generate_report_docx
-from .permissions import IsOwnerOrReadOnly, CanManageInvestigation, CanGenerateCaseReport, CanVerifyContribution, CanManageUserProfile
+from .permissions import IsOwnerOrReadOnly, CanManageInvestigation, CanGenerateCaseReport, CanVerifyContribution, CanManageUserProfile, IsAdminUser, IsModeratorUser
 from core import serializers
 from io import BytesIO
 
@@ -135,6 +136,36 @@ class ReportViewSet(viewsets.ModelViewSet):
             permission_classes = [permissions.IsAuthenticated]
         return [permission() for permission in permission_classes]
     
+    def get_queryset(self):
+        queryset = Report.objects.all()
+        search = self.request.query_params.get('search', None)
+        start_date = self.request.query_params.get('start_date', None)
+        end_date = self.request.query_params.get('end_date', None)
+        status = self.request.query_params.get('status', None)
+        region = self.request.query_params.get('region', None)
+
+        if search:
+            queryset = queryset.filter(Q(title__icontains=search) | Q(description__icontains=search))
+        if start_date:
+            queryset = queryset.filter(created_at__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(created_at__lte=end_date)
+        if status:
+            queryset = queryset.filter(status=status)
+        if region:
+            queryset = queryset.filter(region__id=region)
+
+        return queryset
+    
+    @action(detail=True, methods=['post'])
+    def add_comment(self, request, pk=None):
+        report = self.get_object()
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user, report=report)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -176,8 +207,20 @@ class EvidenceViewSet(viewsets.ModelViewSet):
 class InvestigationViewSet(viewsets.ModelViewSet):
     queryset = Investigation.objects.all()
     serializer_class = InvestigationSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, CanManageInvestigation]
+    permission_classes = [permissions.IsAuthenticated, CanManageInvestigation]
 
+    def get_queryset(self):
+        queryset = Investigation.objects.all()
+        search = self.request.query_params.get('search', None)
+        status = self.request.query_params.get('status', None)
+
+        if search:
+            queryset = queryset.filter(Q(report__title__icontains=search) | Q(report__description__icontains=search))
+        if status:
+            queryset = queryset.filter(status=status)
+
+        return queryset
+    
     @action(detail=True, methods=['post'])
     @transaction.atomic
     def start_investigation(self, request, pk=None):
@@ -411,3 +454,48 @@ class BadgeViewSet(viewsets.ModelViewSet):
         serializer = serializers.UserProfileSerializer(users, many=True)
         return Response(serializer.data)
 '''
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user, read=False)
+    
+    @action(detail=True, methods=['post'])
+    def mark_as_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.read = True
+        notification.save()
+        return Response({'status': 'Notification marked as read.'})
+    
+class AdminViewSet(viewsets.ViewSet):
+    permission_classes = [IsAdminUser]
+
+    @action(detail=False, methods=['get'])
+    def stats (self, request):
+        stats = {
+            'total_users': CustomUser.objects.count(),
+            'total_reports': Report.objects.count(),
+            'total_investigations': Investigation.objects.count(),
+            'total_case_reports': CaseReport.objects.count(),
+            'total_contributions': Contribution.objects.count(),
+            'total_badges': Badge.objects.count()
+        }
+        return Response(stats)
+    
+    @action(detail=False, methods=['get'])
+    def users(self, request):
+        users = CustomUser.objects.all()
+        serializer = CustomUserSerializer(users, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def update_user_role(self, request, pk=None):
+        user = CustomUser.objects.get(pk=pk)
+        new_role = request.data.get('role')
+        if new_role in dict(UserRole.ROLE_CHOICES).keys():
+            user.role = new_role
+            user.save()
+            return Response({'status': 'User role updated successfully.'})
+        return Response({'error': 'Invalid role.'}, status=status.HTTP_400_BAD_REQUEST)

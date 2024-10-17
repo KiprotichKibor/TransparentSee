@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser, Evidence, UserProfile, Region, Report, Investigation, InvestigationRole, Task, Contribution, ContributionEvidence, CaseReport, Badge, UserActivity
+from .models import CustomUser, Evidence, UserProfile, Region, Report, Investigation, InvestigationRole, Task, Contribution, ContributionEvidence, CaseReport, Badge, UserActivity, UserRole, Notification, Comment
 from django.contrib.auth.models import User
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -12,6 +12,13 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         return CustomUser.objects.create_user(**validated_data)
+    
+class UserRoleSerializer(serializers.ModelSerializer):
+    user = CustomUserSerializer(read_only=True)
+
+    class Meta:
+        model = UserRole
+        fields = ['id', 'user', 'role']
     
 class UserProfileSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer(read_only=True)
@@ -34,6 +41,14 @@ class EvidenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Evidence
         fields = ['id', 'file', 'uploaded_at']    
+
+class CommentSerializer(serializers.ModelSerializer):
+    user = CustomUserSerializer(read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'user', 'content', 'created_at']
+        read_only_fields = ['user', 'created_at']
 
 class ReportSerializer(serializers.ModelSerializer):
     evidences = EvidenceSerializer(many=True, read_only=True)
@@ -63,7 +78,13 @@ class ReportSerializer(serializers.ModelSerializer):
                 Evidence.objects.create(report=report, file=evidence_file)
 
         return report
-    
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'user', 'message', 'read', 'created_at']
+        read_only_fields = ['user', 'created_at']
+
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
@@ -135,3 +156,20 @@ class UserActivitySerializer(serializers.ModelSerializer):
         model = UserActivity
         fields = ['id', 'user', 'activity_type', 'timestamp', 'description']
         read_only_fields = ['timestamp', 'user']
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    role = serializers.CharField(source='role.role', read_only=True)
+    profile = UserProfileSerializer(read_only=True)
+
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'username', 'email', 'role', 'profile']
+        read_only_fields = ['username', 'email', 'role', 'profile']
+
+    def update(self, instance, validated_data):
+        role_data = validated_data.pop('role', None)
+        if role_data:
+            role = instance.role
+            role.role = role_data.get('role', role.role)
+            role.save()
+        return super().update(instance, validated_data)

@@ -1,3 +1,4 @@
+from tokenize import TokenError
 from django.forms import ValidationError
 from rest_framework import viewsets, status, permissions
 from .models import CustomUser, Region, Report, Evidence, Investigation, Contribution, CaseReport, UserActivity, Badge, UserProfile
@@ -27,7 +28,7 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     serializer_class = CustomUserSerializer
     
     def get_permissions(self):
-        if self.action in ['create', 'login']:
+        if self.action in ['create', 'login', 'logout']:
             permission_classes = [permissions.AllowAny]
         else:
             permission_classes = [permissions.IsAdminUser]
@@ -63,14 +64,37 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             'access': str(refresh.access_token),
             'user': CustomUserSerializer(user).data
         })
-    
+
     @action(detail=False, methods=['post'])
     def logout(self, request):
         refresh_token = request.data.get('refresh_token')
-        token = RefreshToken(refresh_token)
-        token.blacklist()
-        return Response({'detail': 'Refresh token blacklisted successfully.'})
+        if refresh_token is None:
+            return Response({'detail': 'Refresh token is required.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()  # Blacklist the refresh token
+            return Response({"detail": "Logout successful."}, status=200)
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+'''
+    @action(detail=False, methods=['post'], url_path='logout')
+    def logout(self, request):
+        try:
+            refresh_token = request.data.get('refresh_token')
+            if not refresh_token:
+                return Response({'error': 'Refresh token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({'detail': 'Logout successful.'}, status=status.HTTP_200_OK)
+        except TokenError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': 'An unexpected error occurred.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+'''
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()

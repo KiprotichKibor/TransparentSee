@@ -22,6 +22,36 @@ class Region(models.Model):
     class Meta:
         unique_together = ('name', 'region_type', 'parent')
 
+class UserRole(models.Model):
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('moderator', 'Moderator'),
+        ('user', 'User'),
+    ]
+    user = models.OneToOneField('CustomUser', on_delete=models.CASCADE, related_name='role')
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='user')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.role}"
+    
+class Notification(models.Model):
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField()
+    read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Notification for {self.user.username}: {self.message[:30]}..."
+    
+class Comment(models.Model):
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    report = models.ForeignKey('Report', on_delete=models.CASCADE, related_name='comments')
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Comment by {self.user.username} on {self.report.title}"
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, username, first_name, last_name, password=None):
         if not email:

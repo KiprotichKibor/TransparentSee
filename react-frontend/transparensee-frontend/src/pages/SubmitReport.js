@@ -5,10 +5,11 @@ import { createReport } from '../services/api';
 const SubmitReport = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [regionId, setRegionId] = useState('');
+    const [region, setRegion] = useState('');
     const [regions, setRegions] = useState([]);
     const [anonymous, setAnonymous] = useState(false);
-    const [error, setError] = useState('');
+    const [errors, setErrors] = useState('');
+    const [loading, setLoading] = useState(false);
     const history = useHistory();
 
     useEffect(() => {
@@ -21,50 +22,70 @@ const SubmitReport = () => {
         ]);
     }, []);
 
+    const validateForm = () => {
+        const newErrors = {};
+        if (!title.trim()) newErrors.title = 'Title is required';
+        if (!description.trim.length < 10) newErrors.description = 'Description must be at least 10 characters long';
+        if (!region) newErrors.region = 'Please select a region';
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
+        if (!validateForm()) return;
+        setLoading(true);
         try {
-            await createReport({ title, description, region, anonymous });
+            await createReport({
+                title,
+                description,
+                region,
+                anonymous,
+            });
             history.push('/dashboard');
-        } catch (err) {
-            setError('Failed to submit report. Please try again.');
+        } catch (error) {
+            setErrors('Failed to submit report. Please try again later.');
+        } finally {
+            setLoading(false);
         }
-    };
+    };  
 
     return (
         <div className='container mt-5'>
             <h2>Submit a New Report</h2>
-            {error && <div className='alert alert-danger'>{error}</div>}
+            {errors.submit && <div className='alert alert-danger'>{errors.submit}</div>}
             <form onSubmit={handleSubmit}>
                 <div className='mb-3'>
                     <label htmlFor='title' className='form-label'>Title</label>
                     <input
                         type='text'
-                        className='form-control'
+                        className={`form-control ${errors.title ? 'is-invalid' : ''}`}
                         id='title'
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         required
                     />
+                    {errors.title && <div className='invalid-feedback'>{errors.title}</div>}
                 </div>
                 <div className='mb-3'>
                     <label htmlFor='description' className='form-label'>description</label>
                     <textarea
-                        className='form-control'
+                        className={`form-control ${errors.description ? 'is-invalid' : ''}`}
                         id='description'
+                        rows='3'
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         required
                     ></textarea>
+                    {errors.description && <div className='invalid-feedback'>{errors.description}</div>}
                 </div>
                 <div className='mb-3'>
                     <label htmlFor='region' className='form-label'>Region</label>
                     <select
-                        className='form-control'
+                        className={`form-control ${errors.region ? 'is-invalid' : ''}`}
                         id = 'region'
-                        value={regionId}
-                        onChange={(e) => setRegionId(e.target.value)}
+                        value={region}
+                        onChange={(e) => setRegion(e.target.value)}
                         required
                     >
                         <option value=''>Select a Region</option>
@@ -72,6 +93,7 @@ const SubmitReport = () => {
                             <option key={r.id} value={r.id}>{r.name}</option>
                         ))}
                     </select>
+                    {errors.region && <div className='invalid-feedback'>{errors.region}</div>}
                 </div>
                 <div className='mb-3 form-check'>
                     <input
@@ -83,7 +105,9 @@ const SubmitReport = () => {
                     />
                     <label className='form-check-label' htmlFor='anonymous'>Submit anonymously</label>
                 </div>
-                <button type='submit' className='btn btn-primary'>Submit Report</button>
+                <button type='submit' className='btn btn-primary' disabled={loading}>
+                    {loading ? 'Submitting...' : 'Submit Report'}
+                </button>
             </form>
         </div>
     );

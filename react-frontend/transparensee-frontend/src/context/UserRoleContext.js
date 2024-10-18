@@ -17,6 +17,7 @@ export const UserRoleProvider = ({ children }) => {
           setUserRole(response.data.role);
         } catch (error) {
           console.error('Failed to fetch user role:', error);
+          setUserRole('user'); // Default to 'user' role if fetch fails
         } finally {
           setLoading(false);
         }
@@ -29,11 +30,37 @@ export const UserRoleProvider = ({ children }) => {
     fetchUserRole();
   }, [user]);
 
+  const updateUserRole = (newRole) => {
+    setUserRole(newRole);
+  };
+
   return (
-    <UserRoleContext.Provider value={{ userRole, loading }}>
+    <UserRoleContext.Provider value={{ userRole, loading, updateUserRole }}>
       {children}
     </UserRoleContext.Provider>
   );
 };
 
-export const useUserRole = () => useContext(UserRoleContext);
+export const useUserRole = () => {
+  const context = useContext(UserRoleContext);
+  if (context === undefined) {
+    throw new Error('useUserRole must be used within a UserRoleProvider');
+  }
+  return context;
+};
+
+export const useIsAdmin = () => {
+  const { userRole, loading } = useUserRole();
+  return {
+    isAdmin: userRole === 'admin',
+    loading
+  };
+};
+
+export const useIsModerator = () => {
+  const { userRole, loading } = useUserRole();
+  return {
+    isModerator: userRole === 'moderator' || userRole === 'admin',
+    loading
+  };
+};

@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { useUserRole } from './context/UserRoleContext';
+import { UserRoleProvider, useIsAdmin, useIsModerator } from './context/UserRoleContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';

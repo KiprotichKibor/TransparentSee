@@ -48,7 +48,7 @@ export const createContribution = async (investigationId, data) => {
 }
 
 export const getUserProfile = async (username) => {
-    return await api.get('/users-profiles/${username}/');
+    return await api.get(`/users-profiles/${username}/`);
 }
 
 export const updateProfile = async (username, data) => {
@@ -85,6 +85,10 @@ export const getUsers = async () => {
 
 export const updateUserRole = async (userId, role) => {
     return await api.patch(`/users/${userId}/`, { role });
+}
+
+export const updateUserProfile = async (username, data) => {
+    return await api.patch(`/users-profiles/${username}/`, data);
 }
 
 export default api;

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, AuthContext } from './context/AuthContext';
 import { UserRoleProvider, useIsAdmin, useIsModerator } from './context/UserRoleContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -12,6 +12,7 @@ import SubmitReport from './pages/SubmitReport';
 import Investigation from './pages/Investigation';
 import UserProfile from './pages/UserProfile';
 import AdminDashboard from './pages/AdminDashboard';
+import ManageReports from './pages/ManageReports';
 
 const PrivateRoute = ({ component: Component, ...rest }) => {
   const { user } = useContext(AuthContext);
@@ -58,29 +59,31 @@ const ModeratorRoute = ({ component: Component, ...rest }) => {
 };
 
 function App() {
-  return (
-    <AuthProvider>
-      <UserRoleProvider>
-        <Router>
-          <div className="App">
-            <Header />
-            <Routes>
-              <Route exact path="/" component={Home} />
-              <Route path="/login" component={Login} />
-              <Route path="/register" component={Register} />
-              <PrivateRoute path="/dashboard" component={Dashboard} />
-              <PrivateRoute path="/submit-report" component={SubmitReport} />
-              <PrivateRoute path="/investigation/:id" component={Investigation} />
-              <PrivateRoute path="/profile/:username" component={UserProfile} />
-              <AdminRoute path="/admin" component={AdminDashboard} />
-              <ModeratorRoute path="/manage-reports" component={ManageReports} />
-            </Routes>
-            <Footer />
-          </div>
-        </Router>
-      </UserRoleProvider>
-    </AuthProvider>
-  );
-}
+    return (
+      <AuthProvider>
+        <UserRoleProvider>
+          <Router>
+            <div className="App">
+              <Header />
+              <main className="container">
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/submit-report" element={<SubmitReport />} />
+                  <Route path="/investigation/:id" element={<Investigation />} />
+                  <Route path="/profile/:username" element={<UserProfile />} />
+                  <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/manage-reports" element={<ManageReports />} />
+                </Routes>
+              </main>
+              <Footer />
+            </div>
+          </Router>
+        </UserRoleProvider>
+      </AuthProvider>
+    );
+  }
 
 export default App;

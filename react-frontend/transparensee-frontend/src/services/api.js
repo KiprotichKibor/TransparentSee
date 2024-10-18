@@ -91,4 +91,8 @@ export const updateUserProfile = async (username, data) => {
     return await api.patch(`/users-profiles/${username}/`, data);
 }
 
+export const updateReportStatus = async (reportId, status) => {
+    return await api.patch(`/reports/${reportId}/`, { status });
+}
+
 export default api;

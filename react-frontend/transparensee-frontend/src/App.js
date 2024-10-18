@@ -14,76 +14,53 @@ import UserProfile from './pages/UserProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageReports from './pages/ManageReports';
 
-const PrivateRoute = ({ component: Component, ...rest }) => {
+const PrivateRoute = ({ element }) => {
   const { user } = useContext(AuthContext);
-  return (
-    <Route
-      {...rest}
-      render={props =>
-        user ? <Component {...props} /> : <Navigate to="/login" />
-      }
-    />
-  );
+  return user ? element : <Navigate to="/login" />;
 };
 
-const AdminRoute = ({ component: Component, ...rest }) => {
+const AdminRoute = ({ element }) => {
   const { isAdmin, loading } = useIsAdmin();
   const { user } = useContext(AuthContext);
 
   if (loading) return <div>Loading...</div>;
 
-  return (
-    <Route
-      {...rest}
-      render={props =>
-        user && isAdmin ? <Component {...props} /> : <Navigate to="/dashboard" />
-      }
-    />
-  );
+  return user && isAdmin ? element : <Navigate to="/dashboard" />;
 };
 
-const ModeratorRoute = ({ component: Component, ...rest }) => {
+const ModeratorRoute = ({ element }) => {
   const { isModerator, loading } = useIsModerator();
   const { user } = useContext(AuthContext);
 
   if (loading) return <div>Loading...</div>;
 
-  return (
-    <Route
-      {...rest}
-      render={props =>
-        user && isModerator ? <Component {...props} /> : <Navigate to="/dashboard" />
-      }
-    />
-  );
+  return user && isModerator ? element : <Navigate to="/dashboard" />;
 };
 
 function App() {
-    return (
-      <AuthProvider>
-        <UserRoleProvider>
-          <Router>
-            <div className="App">
-              <Header />
-              <main className="container">
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/submit-report" element={<SubmitReport />} />
-                  <Route path="/investigation/:id" element={<Investigation />} />
-                  <Route path="/profile/:username" element={<UserProfile />} />
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/manage-reports" element={<ManageReports />} />
-                </Routes>
-              </main>
-              <Footer />
-            </div>
-          </Router>
-        </UserRoleProvider>
-      </AuthProvider>
-    );
-  }
+  return (
+    <AuthProvider>
+      <UserRoleProvider>
+        <Router>
+          <div className="App">
+            <Header />
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
+              <Route path="/submit-report" element={<PrivateRoute element={<SubmitReport />} />} />
+              <Route path="/investigation/:id" element={<PrivateRoute element={<Investigation />} />} />
+              <Route path="/profile/:username" element={<PrivateRoute element={<UserProfile />} />} />
+              <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
+              <Route path="/manage-reports" element={<ModeratorRoute element={<ManageReports />} />} />
+            </Routes>
+            <Footer />
+          </div>
+        </Router>
+      </UserRoleProvider>
+    </AuthProvider>
+  );
+}
 
 export default App;

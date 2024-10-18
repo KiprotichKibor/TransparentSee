@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { UserRoleProvider, useIsAdmin, useIsModerator } from './context/UserRoleContext';
 import Header from './components/Header';
@@ -19,7 +19,7 @@ const PrivateRoute = ({ component: Component, ...rest }) => {
     <Route
       {...rest}
       render={props =>
-        user ? <Component {...props} /> : <Redirect to="/login" />
+        user ? <Component {...props} /> : <Navigate to="/login" />
       }
     />
   );
@@ -35,7 +35,7 @@ const AdminRoute = ({ component: Component, ...rest }) => {
     <Route
       {...rest}
       render={props =>
-        user && isAdmin ? <Component {...props} /> : <Redirect to="/dashboard" />
+        user && isAdmin ? <Component {...props} /> : <Navigate to="/dashboard" />
       }
     />
   );
@@ -51,7 +51,7 @@ const ModeratorRoute = ({ component: Component, ...rest }) => {
     <Route
       {...rest}
       render={props =>
-        user && isModerator ? <Component {...props} /> : <Redirect to="/dashboard" />
+        user && isModerator ? <Component {...props} /> : <Navigate to="/dashboard" />
       }
     />
   );
@@ -64,7 +64,7 @@ function App() {
         <Router>
           <div className="App">
             <Header />
-            <Switch>
+            <Routes>
               <Route exact path="/" component={Home} />
               <Route path="/login" component={Login} />
               <Route path="/register" component={Register} />
@@ -74,7 +74,7 @@ function App() {
               <PrivateRoute path="/profile/:username" component={UserProfile} />
               <AdminRoute path="/admin" component={AdminDashboard} />
               <ModeratorRoute path="/manage-reports" component={ManageReports} />
-            </Switch>
+            </Routes>
             <Footer />
           </div>
         </Router>

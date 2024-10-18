@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { createReport } from '../services/api';
 
 const SubmitReport = () => {
@@ -10,7 +10,7 @@ const SubmitReport = () => {
     const [anonymous, setAnonymous] = useState(false);
     const [errors, setErrors] = useState('');
     const [loading, setLoading] = useState(false);
-    const history = useHistory();
+    const history = useNavigate();
 
     useEffect(() => {
         // Fetch regions

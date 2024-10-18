@@ -5,7 +5,6 @@ import { useUserRole, useIsAdmin, useIsModerator } from '../context/UserRoleCont
 
 const Header = () => {
   const { user, logoutUser } = useContext(AuthContext);
-  const { userRole } = useUserRole();
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
 

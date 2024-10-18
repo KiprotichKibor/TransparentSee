@@ -79,4 +79,12 @@ export const getUserRole = async () => {
     return await api.get('/user-role/');
 }
 
+export const getUsers = async () => {
+    return await api.get('/users/');
+}
+
+export const updateUserRole = async (userId, role) => {
+    return await api.patch(`/users/${userId}/`, { role });
+}
+
 export default api;

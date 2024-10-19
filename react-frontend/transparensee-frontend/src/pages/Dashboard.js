@@ -18,33 +18,34 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const { user } = useContext(AuthContext);
-
-    const fetchReports = async () => {
-        try {
-            const response = await getReports({ page: reportPage, ...reportFilters });
-            setReports(response.data.results);
-        } catch (err) {
-            setError('Failed to fetch reports');
-        }
-    };
-
-    const fetchInvestigations = async () => {
-        try {
-            const response = await getInvestigations({ page: investigationPage, ...investigationFilters });
-            setInvestigations(response.data.results);
-        } catch (err) {
-            setError('Failed to fetch investigations');
-        }
-    };
-
+    
     useEffect(() => {
+        const fetchReports = async () => {
+            try {
+                const response = await getReports(reportPage, reportFilters);
+                setReports(response.data.results);
+            } catch (err) {
+                setError('Failed to fetch reports');
+            }
+        };
+
+        const fetchInvestigations = async () => {
+            try {
+                const response = await getInvestigations(investigationPage, investigationFilters);
+                setInvestigations(response.data.results);
+            } catch (err) {
+                setError('Failed to fetch investigations');
+            }
+        };
+
         const fetchData = async () => {
             setLoading(true);
             await Promise.all([fetchReports(), fetchInvestigations()]);
             setLoading(false);
         };
+
         fetchData();
-    }, [reportPage, reportFilters, investigationPage, investigationFilters]);
+    }, [reportPage, reportFilters, investigationPage, investigationFilters]); // No need to include fetchReports and fetchInvestigations here
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div className='alert alert-danger'>{error}</div>;

@@ -10,7 +10,7 @@ const SubmitReport = () => {
     const [anonymous, setAnonymous] = useState(false);
     const [errors, setErrors] = useState('');
     const [loading, setLoading] = useState(false);
-    const history = useNavigate();
+    const navigate = useNavigate();
 
     useEffect(() => {
         // Fetch regions
@@ -42,7 +42,7 @@ const SubmitReport = () => {
                 region,
                 anonymous,
             });
-            history.push('/dashboard');
+            navigate('/dashboard');
         } catch (error) {
             setErrors('Failed to submit report. Please try again later.');
         } finally {

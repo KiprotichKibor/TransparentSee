@@ -1,0 +1,46 @@
+.contribution-form {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--box-shadow);
+  }
+  
+  .contribution-form h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+  }
+  
+  .contribution-form .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .contribution-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .contribution-form .form-control {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+  }
+  
+  .contribution-form textarea.form-control {
+    resize: vertical;
+  }
+  
+  .contribution-form .form-control-file {
+    padding: 0.5rem 0;
+  }
+  
+  .contribution-form .btn-primary {
+    margin-top: 1rem;
+  }
+  
+  .contribution-form .alert {
+    margin-bottom: 1rem;
+  }

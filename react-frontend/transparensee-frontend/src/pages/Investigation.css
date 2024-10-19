@@ -1,0 +1,48 @@
+.investigation-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.investigation-container h2 {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+}
+
+.report-details {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: var(--box-shadow);
+}
+
+.contributions-list {
+    margin-bottom: 2rem;
+}
+
+.contribution-item {
+    border-left: 4px solid var(--secondary-color);
+}
+
+.contribution-item .card-body {
+    padding: 1rem;
+}
+
+.evidence-file {
+    margin-top: 0.5rem;
+}
+
+.evidence-file a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.evidence-file a:hover {
+    text-decoration: underline;
+}
+
+.loading {
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--text-color);
+    margin-top: 2rem;
+}

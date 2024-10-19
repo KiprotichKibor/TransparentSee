@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInvestigation, createContribution } from '../services/api';
+import { getInvestigation } from '../services/api';
+import ContributionForm from '../components/ContributionForm';
+import './Investigation.css';
 
 const Investigation = () => {
     const { id } = useParams();
     const [investigation, setInvestigation] = useState(null);
-    const [newContribution, setNewContribution] = useState('');
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -14,25 +15,17 @@ const Investigation = () => {
                 const response = await getInvestigation(id);
                 setInvestigation(response.data);
             } catch (error) {
-                setError('Fialed to load investigation details');
+                setError('Failed to load investigation details');
             }
         };
         fetchInvestigation();
     }, [id]);
 
-    const handleSubmitContribution = async (e) => {
-        e.preventDefault();
-        setError('');
-        try {
-        const response = await createContribution(id, { content: newContribution, contribution_type: 'comment' });
-        setInvestigation(prev => ({ 
+    const handleNewContribution = (newContribution) => {
+        setInvestigation(prev => ({
             ...prev,
-            contributions: [...prev.contributions, response.data]
+            contributions: [...prev.contributions, newContribution]
         }));
-        setNewContribution('');
-        } catch (error) {
-            setError('Failed to submit contribution. Please try again later.');
-        }
     };
 
     if (error) {
@@ -40,13 +33,13 @@ const Investigation = () => {
     }
 
     if (!investigation) {
-        return <div>Loading...</div>;
+        return <div className="loading">Loading...</div>;
     }
 
     return (
-        <div className='container mt-5'>
+        <div className='investigation-container'>
             <h2>Investigation: {investigation.report.title}</h2>
-            <div className='card mb-3'>
+            <div className='report-details card mb-3'>
                 <div className='card-body'>
                     <h5 className='card-title'>Report Details</h5>
                     <p className='card-text'>{investigation.report.description}</p>
@@ -60,33 +53,32 @@ const Investigation = () => {
             </div>
 
             <h3>Contributions</h3>
-            {investigation.contributions.map(contribution => (
-                <div key={contribution.id} className='card mb-2'>
-                    <div className='card-body'>
-                        <p className='card-text'>{contribution.content}</p>
-                        <p className='card-text'>
-                            <small className='text-muted'>
-                                By: {contribution.anonymous ? 'Anonymous' : contribution.user.username} |
-                                On: {new Date(contribution.created_at).toLocaleDateString()}
-                            </small>
-                        </p>
+            <div className='contributions-list'>
+                {investigation.contributions.map(contribution => (
+                    <div key={contribution.id} className='contribution-item card mb-2'>
+                        <div className='card-body'>
+                            <p className='card-text'>{contribution.content}</p>
+                            {contribution.contribution_type === 'evidence' && contribution.evidence_file && (
+                                <div className='evidence-file'>
+                                    <a href={contribution.evidence_file} target="_blank" rel="noopener noreferrer">View Evidence</a>
+                                </div>
+                            )}
+                            <p className='card-text'>
+                                <small className='text-muted'>
+                                    Type: {contribution.contribution_type} |
+                                    By: {contribution.anonymous ? 'Anonymous' : contribution.user.username} |
+                                    On: {new Date(contribution.created_at).toLocaleDateString()}
+                                </small>
+                            </p>
+                        </div>
                     </div>
-                </div>
-            ))}
+                ))}
+            </div>
 
-            <h4 className='mt-4'>Add a contribution</h4>
-            <form onSubmit={handleSubmitContribution}>
-                <div className='mb-3'>
-                    <textarea
-                        className='form-control'
-                        rows='3'
-                        value={newContribution}
-                        onChange={e => setNewContribution(e.target.value)}
-                        required
-                    ></textarea>
-                </div>
-                <button type='submit' className='btn btn-primary'>Submit Contribution</button>
-            </form>
+            <ContributionForm 
+                investigationId={id}
+                onContributionSubmit={handleNewContribution}
+            />
         </div>
     );
 };

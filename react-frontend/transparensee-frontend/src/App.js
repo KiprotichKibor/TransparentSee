@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { UserRoleProvider, useIsAdmin, useIsModerator } from './context/UserRoleContext';
@@ -13,6 +13,7 @@ import Investigation from './pages/Investigation';
 import UserProfile from './pages/UserProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageReports from './pages/ManageReports';
+import { getCurrentUser } from './services/auth';
 
 const PrivateRoute = ({ element }) => {
   const { user } = useContext(AuthContext);
@@ -25,7 +26,7 @@ const AdminRoute = ({ element }) => {
 
   if (loading) return <div>Loading...</div>;
 
-  return user && isAdmin ? element : <Navigate to="/dashboard" />;
+  return user && isAdmin ? element : <Navigate to="/Admindashboard" />;
 };
 
 const ModeratorRoute = ({ element }) => {
@@ -34,10 +35,26 @@ const ModeratorRoute = ({ element }) => {
 
   if (loading) return <div>Loading...</div>;
 
-  return user && isModerator ? element : <Navigate to="/dashboard" />;
+  return user && isModerator ? element : <Navigate to="/ManageReports" />;
 };
 
 function App() {
+  const { setUser } = useContext(AuthContext);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          setUser(user);
+        }
+      } catch (error) {
+        console.error('Failed to check user', error);
+      }
+    };
+    checkUser();
+  }, [setUser]);
+
   return (
     <AuthProvider>
       <UserRoleProvider>

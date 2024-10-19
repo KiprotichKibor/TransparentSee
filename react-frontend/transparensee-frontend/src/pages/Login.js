@@ -1,20 +1,24 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { getCurrentUser } from '../services/auth';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const { loginUser } = useContext(AuthContext);
-    const history = useNavigate();
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             await loginUser(email, password);
-            history.push('/dashboard');
-        } catch (error) {
+            const user = await getCurrentUser();
+            setUser(user);
+            navigate('/dashboard');
+        } catch (err) {
+            console.error('Login failed', err);
             setError('Invalid email or password');
         }
     };

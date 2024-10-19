@@ -2,7 +2,7 @@ from tokenize import TokenError
 from django.forms import ValidationError
 from rest_framework import viewsets, status, permissions
 from .models import CustomUser, Region, Report, Evidence, Investigation, Contribution, CaseReport, UserActivity, Badge, UserProfile, UserRole, Notification, Comment
-from .serializers import CustomUserSerializer, RegionSerializer, ReportSerializer, EvidenceSerializer, InvestigationSerializer, ContributionSerializer, CaseReportSerializer, UserProfileSerializer, NotificationSerializer, CommentSerializer
+from .serializers import CustomUserSerializer, RegionSerializer, ReportSerializer, EvidenceSerializer, InvestigationSerializer, ContributionSerializer, CaseReportSerializer, UserProfileSerializer, NotificationSerializer, CommentSerializer, UserRoleSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -38,9 +38,14 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        
         user = serializer.save()
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+
         return Response({
             'user': CustomUserSerializer(user).data,
+            'access': access_token,
             'message': 'User created successfully.'
         }, status=status.HTTP_201_CREATED)
     
@@ -499,3 +504,41 @@ class AdminViewSet(viewsets.ViewSet):
             user.save()
             return Response({'status': 'User role updated successfully.'})
         return Response({'error': 'Invalid role.'}, status=status.HTTP_400_BAD_REQUEST)
+
+class UserRoleViewSet(viewsets.ModelViewSet):
+    queryset = UserRole.objects.all()
+    serializer_class = UserRoleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return UserRole.objects.all()
+        return UserRole.objects.filter(user=self.request.user)
+
+    @action(detail=False, methods=['GET'])
+    def my_role(self, request):
+        user_role = UserRole.objects.get(user=request.user)
+        serializer = self.get_serializer(user_role)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['POST'], permission_classes=[IsAdminUser])
+    def set_role(self, request, pk=None):
+        user_role = self.get_object()
+        new_role = request.data.get('role')
+        if new_role not in dict(UserRole.ROLE_CHOICES).keys():
+            return Response({'error': 'Invalid role'}, status=status.HTTP_400_BAD_REQUEST)
+        user_role.role = new_role
+        user_role.save()
+        return Response({'status': 'role updated'})
+
+    def update(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            return Response({'error': 'You do not have permission to perform this action.'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            return Response({'error': 'You do not have permission to perform this action.'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().partial_update(request, *args, **kwargs)

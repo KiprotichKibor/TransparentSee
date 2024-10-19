@@ -1,17 +1,34 @@
 from rest_framework import serializers
 from .models import CustomUser, Evidence, UserProfile, Region, Report, Investigation, InvestigationRole, Task, Contribution, ContributionEvidence, CaseReport, Badge, UserActivity, UserRole, Notification, Comment
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.models import User
 
 class CustomUserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    confirm_password = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'password', 'first_name', 'last_name']
+        fields = ['username', 'email', 'password', 'confirm_password', 'first_name', 'last_name']
         extra_kwargs = {'password': {'write_only': True}}
 
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError({'password': 'Passwords do not match.'})
+        if len(data['password']) < 8:
+            raise serializers.ValidationError('Password must be at least 8 characters long.')
+        
+        try:
+            validate_password(data['password'])
+        except serializers.ValidationError as e:
+            raise serializers.ValidationError({'password': e.messages})
+        
+        return data
+
     def create(self, validated_data):
-        return CustomUser.objects.create_user(**validated_data)
+        validated_data.pop('confirm_password')
+        user = CustomUser.objects.create_user(**validated_data)
+        return user
     
 class UserRoleSerializer(serializers.ModelSerializer):
     user = CustomUserSerializer(read_only=True)

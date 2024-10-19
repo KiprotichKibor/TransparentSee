@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from core.views import CustomUserViewSet, RegionViewSet, ReportViewSet, InvestigationViewSet, ContributionViewSet, EvidenceViewSet, CaseReportViewSet, UserProfileViewSet, BadgeViewSet
+from core import views
+from core.views import CustomUserViewSet, RegionViewSet, ReportViewSet, InvestigationViewSet, ContributionViewSet, EvidenceViewSet, CaseReportViewSet, UserProfileViewSet, BadgeViewSet, get_stats
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
@@ -25,6 +26,7 @@ urlpatterns = [
     path('api/register/', CustomUserViewSet.as_view({'post': 'create'}), name='register'),
     path('api/users/', CustomUserViewSet.as_view({'get': 'list'}), name='users'),
     path('api/users/<int:pk>/', CustomUserViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='user'),
+    path('api/user-role/', views.get_user_role, name='user-role'),
     path('api/login/', CustomUserViewSet.as_view({'post': 'login'}), name='login'),
     path('api/logout/', CustomUserViewSet.as_view({'post': 'logout'}), name='logout'),
     path('api/profile/', UserProfileViewSet.as_view({'get': 'retrieve', 'put': 'update'}), name='profile'),
@@ -41,6 +43,7 @@ urlpatterns = [
     path('api/case-reports/<int:pk>/', CaseReportViewSet.as_view({'get': 'retrieve', 'put': 'update', '   delete': 'destroy'}), name='case-report'),
     path('api/badges/', BadgeViewSet.as_view({'get': 'list', 'post': 'create'}), name='badges'),
     path('api/badges/<int:pk>/', BadgeViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='badge'),
+    path('api/stats/', get_stats, name='stats'),
     path('api-auth/', include('rest_framework.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),

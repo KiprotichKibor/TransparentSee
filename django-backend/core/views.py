@@ -4,17 +4,18 @@ from rest_framework import viewsets, status, permissions
 from .models import CustomUser, Region, Report, Evidence, Investigation, Contribution, CaseReport, UserActivity, Badge, UserProfile, UserRole, Notification, Comment
 from .serializers import CustomUserSerializer, RegionSerializer, ReportSerializer, EvidenceSerializer, InvestigationSerializer, ContributionSerializer, CaseReportSerializer, UserProfileSerializer, NotificationSerializer, CommentSerializer, UserRoleSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
+from django.utils import timezone
 from django.views.decorators.cache import cache_page
 from django_ratelimit.decorators import ratelimit
 from weasyprint import HTML
@@ -22,6 +23,7 @@ from .utils import generate_report_content, enhanced_content_moderation, generat
 from .permissions import IsOwnerOrReadOnly, CanManageInvestigation, CanGenerateCaseReport, CanVerifyContribution, CanManageUserProfile, IsAdminUser, IsModeratorUser
 from core import serializers
 from io import BytesIO
+from dateutil.relativedelta import relativedelta
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
@@ -123,6 +125,11 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         privacy_settings = request.data.get('privacy_settings', {})
         profile.update_privacy_settings(privacy_settings)
         return Response({'status': 'Privacy settings updated successfully.'})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_role(request):
+    return Response({'role': request.user.role.role})
 
 class RegionViewSet(viewsets.ModelViewSet):
     queryset = Region.objects.all()
@@ -542,3 +549,34 @@ class UserRoleViewSet(viewsets.ModelViewSet):
             return Response({'error': 'You do not have permission to perform this action.'},
                             status=status.HTTP_403_FORBIDDEN)
         return super().partial_update(request, *args, **kwargs)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_stats(request):
+    # Get counts for reports by status
+    reports_by_status = Report.objects.values('status').annotate(count=Count('id'))
+
+    # Get counts for reports by region
+    reports_by_region = Report.objects.values('region_name').annotate(count=Count('id'))                                                 
+
+    # Get counts for investigations by status
+    investigations_by_status = Investigation.objects.values('status').annotate(count=Count('id'))
+
+    # Get Reports over time (last 6 months)
+    end_date = timezone.now().date()
+    start_date = end_date - relativedelta(months=6)
+    reports_over_time = (
+        Report.objects
+        .filter(created_at__date__range=[start_date, end_date])
+        .extra({'date': "date(created_at)"})
+        .values('date')
+        .annotate(count=Count('id'))
+        .order_by('date')
+    )
+
+    return Response({
+        'reportsByStatus': reports_by_status,
+        'reportsByRegion': reports_by_region,
+        'investigationsByStatus': investigations_by_status,
+        'reportsOverTime': reports_over_time,
+    })

@@ -22,11 +22,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     response => response,
     error => {
-        // Check if the error response is available and return more informative details
-        if (error.response && error.response.data) {
-            return Promise.reject(error.response.data);  // Forward backend validation errors
+        if (error.response && error.response.status === 401) {
+          // Redirect to login page or refresh token
+            window.location.href = '/login';
         }
-        return Promise.reject(error);
+        return Promise.reject(error.response ? error.response.data : error);
     }
 );
 
@@ -43,8 +43,24 @@ export const getReport = async (id) => {
     return await api.get(`/reports/${id}/`);
 };
 
-export const createReport = async (data) => {
-    return await api.post('/reports/', data);
+export const createReport = async (formData) => {
+    return await api.post('/reports/', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+};
+
+export const getRegions = async () => {
+    return await api.get('/regions/');
+};
+
+export const startInvestigation = async (reportId) => {
+    return await api.post(`/reports/${reportId}/start-investigation/`);
+};
+
+export const updateInvestigationStatus = async (investigationId, status) => {
+    return await api.post(`/investigations/${investigationId}/update-status/`, { status });
 };
 
 export const getInvestigations = async (page = 1, search = '') => {
@@ -62,6 +78,18 @@ export const getInvestigation = async (id) => {
 
 export const createContribution = async (investigationId, data) => {
     return await api.post(`/investigations/${investigationId}/contributions/`, data);
+};
+
+export const voteContribution = async (investiagtionId, contributionId, vote) => {
+    return await api.post(`/investigations/${investiagtionId}/vote-contribution/`, { contribution_id: contributionId, vote });
+};
+
+export const assignRole = async (investigationId, userId, role) => {
+    return await api.post(`/investigations/${investigationId}/assign-role/`, { user_id: userId, role });
+};
+
+export const createTask = async (investigationId, taskData) => {
+    return await api.post(`/investigations/${investigationId}/create-task/`, taskData);
 };
 
 export const getUserProfile = async (username) => {

@@ -1,25 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createReport } from '../services/api';
+import { createReport, getRegions } from '../services/api';
 
 const SubmitReport = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [region, setRegion] = useState('');
     const [regions, setRegions] = useState([]);
+    const [evidenceFiles, setEvidenceFiles] = useState([]);
     const [anonymous, setAnonymous] = useState(false);
     const [errors, setErrors] = useState('');
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Fetch regions
-        // This is a placeholder for the actual API call
-        setRegions([
-            { id: 1, name: 'Region 1' },
-            { id: 2, name: 'Region 2' },
-            { id: 3, name: 'Region 3' },
-        ]);
+        const fetchRegions = async () => {
+            try {
+                const response = await getRegions();
+                setRegions(response.data);
+            } catch (error) {
+                setErrors('Failed to fetch regions:', error);
+            }
+        };
+        fetchRegions();
     }, []);
 
     const validateForm = () => {
@@ -35,16 +38,22 @@ const SubmitReport = () => {
         e.preventDefault();
         if (!validateForm()) return;
         setLoading(true);
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('region', region);
+        formData.append('anonymous', anonymous);
+
+        evidenceFiles.forEach((file, index) => {
+            formData.append(`evidence_files[${index}]`, file);
+        });
+
         try {
-            await createReport({
-                title,
-                description,
-                region,
-                anonymous,
-            });
+            await createReport(formData);
             navigate('/dashboard');
         } catch (error) {
-            setErrors('Failed to submit report. Please try again later.');
+            setErrors({ submit: 'Failed to submit report. Please try again later.'});
         } finally {
             setLoading(false);
         }

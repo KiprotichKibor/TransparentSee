@@ -1,40 +1,65 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getInvestigation } from '../services/api';
+import { getInvestigation, updateInvestigationStatus, voteContribution, assignRole } from '../services/api';
 import ContributionForm from '../components/ContributionForm';
 import './Investigation.css';
 
 const Investigation = () => {
     const { id } = useParams();
     const [investigation, setInvestigation] = useState(null);
+    const [newStatus, setNewStatus] = useState('');
+    const [newRole, setNewRole] = useState({ userId: '', role: '' });
+    const [newTask, setNewTask] = useState({ title: '', description: '', dueDate: '' });
     const [error, setError] = useState('');
 
     useEffect(() => {
-        const fetchInvestigation = async () => {
-            try {
-                const response = await getInvestigation(id);
-                setInvestigation(response.data);
-            } catch (error) {
-                setError('Failed to load investigation details');
-            }
-        };
         fetchInvestigation();
     }, [id]);
 
-    const handleNewContribution = (newContribution) => {
-        setInvestigation(prev => ({
-            ...prev,
-            contributions: [...prev.contributions, newContribution]
-        }));
+    const fetchInvestigation = async () => {
+        try {
+            const response = await getInvestigation(id);
+            setInvestigation(response.data);
+        } catch (err) {
+            setError('Failed to fetch investigation');
+        }
     };
 
-    if (error) {
-        return <div className='alert alert-danger'>{error}</div>;
-    }
+    const handleStatusUpdate = async () => {
+        try {
+            await updateInvestigationStatus(id, newStatus);
+            fetchInvestigation();
+        } catch (err) {
+            setError('Failed to update status');
+        }
+    };
 
-    if (!investigation) {
-        return <div className="loading">Loading...</div>;
-    }
+    const handleVote = async (contributionId, vote) => {
+        try {
+            await voteContribution(id, contributionId, vote);
+            fetchInvestigation();
+        } catch (err) {
+            setError('Failed to vote on contribution');
+        }
+    };
+
+    const handleRoleAssignment = async () => {
+        try {
+            await assignRole(id, newRole.userId, newRole.role);
+            fetchInvestigation();
+        } catch (err) {
+            setError('Failed to assign role');
+        }
+    };
+
+    const handleCreateTask = async () => {
+        try {
+            await createTask(id, newTask);
+            fetchInvestigation();
+        } catch (err) {
+            setError('Failed to create task');
+        }
+    };
 
     return (
         <div className='investigation-container'>
@@ -50,6 +75,53 @@ const Investigation = () => {
                         </small>
                     </p>
                 </div>
+            </div>
+
+            <div className='status-update'>
+                <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
+                    <option value=''>Select new status</option>
+                    <option value='in_progress'>In Progress</option>
+                    <option value='closed'>Closed</option>
+                </select>
+                <button onClick={handleStatusUpdate}>Update Status</button>
+            </div>
+
+            <div className='assign-role'>
+                <input
+                    type='text'
+                    placeholder='User ID'
+                    value={newRole.userId}
+                    onChange={(e) => setNewRole({ ...newRole, userId: e.target.value })}
+                />
+                <select
+                    value={newRole.role}
+                    onChange={(e) => setNewRole({ ...newRole, role: e.target.value })}
+                >
+                    <option value=''>Select role</option>
+                    <option value='lead'>Lead</option>
+                    <option value='contributor'>Contributor</option>
+                </select>
+                <button onClick={handleRoleAssignment}>Assign Role</button>
+            </div>
+
+            <div className='create-task'>
+                <input
+                    type='text'
+                    placeholder='Task title'
+                    value={newTask.title}
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                />
+                <textarea
+                    placeholder='Task description'
+                    value={newTask.description}
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                />
+                <input
+                    type='date'
+                    value={newTask.dueDate}
+                    onChange={(e) => setNewTask({ ...newTask, duedate: e.target.value })}
+                />
+                <button onClick={handleCreateTask}>Create Task</button>
             </div>
 
             <h3>Contributions</h3>
@@ -71,13 +143,17 @@ const Investigation = () => {
                                 </small>
                             </p>
                         </div>
+                        <div className='vote-buttons'>
+                            <button onClick={() => handleVote(contribution.id, 1)}>Upvote</button>
+                            <button onClick={() => handleVote(contribution.id, -1)}>Downvote</button>
+                        </div>
                     </div>
                 ))}
             </div>
 
             <ContributionForm 
                 investigationId={id}
-                onContributionSubmit={handleNewContribution}
+                onContributionSubmit={fetchInvestigation}
             />
         </div>
     );

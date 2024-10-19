@@ -36,12 +36,13 @@ export const register = async (email, username, firstName, lastName, password, c
 
 export const login = async (email, password) => {
   try {
-    const response = await axios.post(API_URL + 'login/', {
+    const response = await axios.post(API_URL + 'token/', {
       email,
       password,
     });
     if (response.data.token) {
-      setAuthToken(response.data.token);
+      localStorage.setItem('access_token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
     }
     return response.data;
   } catch (error) {
@@ -50,7 +51,8 @@ export const login = async (email, password) => {
 };
 
 export const logout = () => {
-  setAuthToken(null);
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
 };
 
 export const getCurrentUser = async () => {

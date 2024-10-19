@@ -23,7 +23,8 @@ const Dashboard = () => {
         const fetchReports = async () => {
             try {
                 const response = await getReports(reportPage, reportFilters);
-                setReports(response.data.results || []);
+                setReports(response.data.results);
+                setTotalPages(Math.ceil(response.data.count / 10));
             } catch (err) {
                 setError('Failed to fetch reports');
             }
@@ -33,6 +34,7 @@ const Dashboard = () => {
             try {
                 const response = await getInvestigations(investigationPage, investigationFilters);
                 setInvestigations(response.data.results);
+                setTotalPages(Math.ceil(response.data.count / 10));
             } catch (err) {
                 setError('Failed to fetch investigations');
             }
@@ -64,7 +66,7 @@ const Dashboard = () => {
                     <Pagination
                         currentPage={reportPage}
                         onPageChange={setReportPage}
-                        totalPages={Math.ceil(reports.length / 10)}
+                        totalPages={totalPages}
                     />
                     <Link to='/submit-report' className='btn btn-primary mt-3'>Submit New Report</Link>
                 </div>
@@ -78,7 +80,7 @@ const Dashboard = () => {
                         <Pagination
                             currentPage={investigationPage}
                             onPageChange={setInvestigationPage}
-                            totalPages={Math.ceil(investigations.count / 10)}
+                            totalPages={totalPages}
                         />
                     )}
                 </div>

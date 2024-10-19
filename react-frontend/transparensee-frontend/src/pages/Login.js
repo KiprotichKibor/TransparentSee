@@ -1,7 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getCurrentUser } from '../services/auth';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -14,8 +13,6 @@ const Login = () => {
         e.preventDefault();
         try {
             await loginUser(email, password);
-            const user = await getCurrentUser();
-            setUser(user);
             navigate('/dashboard');
         } catch (err) {
             console.error('Login failed', err);

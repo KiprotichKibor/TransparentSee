@@ -93,7 +93,7 @@ export const getStats = async () => {
 };
 
 export const getUserRole = async () => {
-    return await api.get('/user-role/');
+    return await api.get('/user-roles/');
 };
 
 export const getUsers = async () => {

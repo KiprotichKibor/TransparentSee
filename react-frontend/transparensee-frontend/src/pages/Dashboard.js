@@ -23,7 +23,7 @@ const Dashboard = () => {
         const fetchReports = async () => {
             try {
                 const response = await getReports(reportPage, reportFilters);
-                setReports(response.data.results);
+                setReports(response.data.results || []);
             } catch (err) {
                 setError('Failed to fetch reports');
             }
@@ -71,14 +71,16 @@ const Dashboard = () => {
                 <div className='col-md-6'>
                     <h3>Active Investigations</h3>
                     <SearchBar onSearch={setInvestigationFilters} type='investigation' />
-                    {investigations.results.map((investigation) => (
+                    {investigations?.results?.map((investigation) => (
                         <InvestigationCard key={investigation.id} investigation={investigation} />
-                    ))}
-                    <Pagination
-                        currentPage={investigationPage}
-                        onPageChange={setInvestigationPage}
-                        totalPages={Math.ceil(investigations.count / 10)}
-                    />
+                    )) || <p>No investigation found.</p>}
+                    {investigations && investigations.count > 0 && (
+                        <Pagination
+                            currentPage={investigationPage}
+                            onPageChange={setInvestigationPage}
+                            totalPages={Math.ceil(investigations.count / 10)}
+                        />
+                    )}
                 </div>
             </div>
         </div>

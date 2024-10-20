@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { getRegions } from '../services/api';
 
 const SearchBar = ({ onSearch, type }) => {
     const [search, setSearch] = useState('');
@@ -8,6 +9,19 @@ const SearchBar = ({ onSearch, type }) => {
     const [endDate, setEndDate] = useState(null);
     const [status, setStatus] = useState('');
     const [region, setRegion] = useState('');
+    const [regions, setRegions] = useState([]);
+
+    useEffect(() => {
+        const fetchRegions = async () => {
+            try {
+                const response = await getRegions();
+                setRegions(response.data);
+            } catch (error) {
+                console.error('Failed to fetch regions:', error);
+            }
+        };
+        fetchRegions();
+    }, []);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -18,6 +32,24 @@ const SearchBar = ({ onSearch, type }) => {
             status,
             region,
         });
+    };
+
+    const getStatusOptions = () => {
+        if (type === 'report') {
+            return [
+                { value: 'pending', label: 'Pending' },
+                { value: 'under_investigation', label: 'Under Investigation' },
+                { value: 'resolved', label: 'Resolved' },
+                { value: 'dismissed', label: 'Dismissed' },
+            ];
+        } else if (type === 'investigation') {
+            return [
+                { value: 'open', label: 'Open' },
+                { value: 'in_progress', label: 'In Progress' },
+                { value: 'closed', label: 'Closed' },
+            ];
+        }
+        return [];
     };
 
     return (
@@ -55,9 +87,11 @@ const SearchBar = ({ onSearch, type }) => {
                         onChange={(e) => setStatus(e.target.value)}
                     >
                         <option value=''>Select Status</option>
-                        <option value='pending'>Pending</option>
-                        <option value='in_progress'>In Progress</option>
-                        <option value='resolved'>Resolved</option>
+                        {getStatusOptions().map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
                 <div className='col-md-2'>
@@ -67,9 +101,11 @@ const SearchBar = ({ onSearch, type }) => {
                         onChange={(e) => setRegion(e.target.value)}
                     >
                         <option value=''>Select Region</option>
-                        <option value='1'>Region 1</option>
-                        <option value='2'>Region 2</option>
-                        <option value='3'>Region 3</option>
+                        {regions.map((r) => (
+                            <option key={r.id} value={r.id}>
+                                {r.name}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>

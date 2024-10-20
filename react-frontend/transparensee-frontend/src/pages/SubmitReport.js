@@ -28,10 +28,14 @@ const SubmitReport = () => {
     const validateForm = () => {
         const newErrors = {};
         if (!title.trim()) newErrors.title = 'Title is required';
-        if (!description.trim.length < 10) newErrors.description = 'Description must be at least 10 characters long';
+        if (description.trim().length < 10) newErrors.description = 'Description must be at least 10 characters long';
         if (!region) newErrors.region = 'Please select a region';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
+    };
+
+    const handleFileChange = (e) => {
+        setEvidenceFiles(Array.from(e.target.files));
     };
 
     const handleSubmit = async (e) => {
@@ -46,13 +50,16 @@ const SubmitReport = () => {
         formData.append('anonymous', anonymous);
 
         evidenceFiles.forEach((file, index) => {
-            formData.append(`evidence_files[${index}]`, file);
+            formData.append(`evidence_files`, file);
         });
 
         try {
-            await createReport(formData);
+            console.log('Submitting report:', Object.fromEntries(formData));
+            const response = await createReport(formData);
+            console.log('Report submitted successfully:', response);
             navigate('/dashboard');
         } catch (error) {
+            console.error('Failed to submit report:', error);
             setErrors({ submit: 'Failed to submit report. Please try again later.'});
         } finally {
             setLoading(false);
@@ -103,6 +110,16 @@ const SubmitReport = () => {
                         ))}
                     </select>
                     {errors.region && <div className='invalid-feedback'>{errors.region}</div>}
+                </div>
+                <div className='mb-3'>
+                    <label htmlFor='evidence' className='form-label'>Evidence Files</label>
+                    <input
+                        type='file'
+                        className='form-control'
+                        id='evidence'
+                        multiple
+                        onChange={handleFileChange}
+                    />
                 </div>
                 <div className='mb-3 form-check'>
                     <input

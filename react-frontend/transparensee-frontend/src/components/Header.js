@@ -1,12 +1,28 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { useUserRole, useIsAdmin, useIsModerator } from '../context/UserRoleContext';
+import { useIsAdmin, useIsModerator } from '../context/UserRoleContext';
+import { getUserProfile } from '../services/api';
 
 const Header = () => {
   const { user, logoutUser } = useContext(AuthContext);
   const { isAdmin } = useIsAdmin();
   const { isModerator } = useIsModerator();
+  const [userProfile, setUserProfile] = useState(null);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        try {
+          const response = await getUserProfile(user.username);
+          setUserProfile(response.data);
+        } catch (error) {
+          console.error('Failed to fetch user profile:', error);
+        }
+      }
+    };
+    fetchUserProfile();
+  }, [user]);
 
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-light">
@@ -22,7 +38,10 @@ const Header = () => {
             {isAdmin && (
               <Link className="nav-item nav-link" to="/admin">Admin Dashboard</Link>
             )}
-            <Link className="nav-item nav-link" to={`/profile/${user.username}`}>Profile</Link>
+            <Link className="nav-item nav-link" to={`/profile/${user.username}`}>
+              Profile
+              {userProfile && userProfile.location && ` (${userProfile.location})`}
+            </Link>
             <button className="nav-item nav-link btn btn-link" onClick={logoutUser}>Logout</button>
           </>
         ) : (

@@ -1,38 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { getInvestigation, updateInvestigationStatus, voteContribution, assignRole } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { getInvestigation, updateInvestigationStatus, voteContribution, assignRole, createTask } from '../services/api';
 import ContributionForm from '../components/ContributionForm';
 import './Investigation.css';
 
-const Investigation = () => {
-    const { id } = useParams();
+const Investigation = ({ id }) => {
     const [investigation, setInvestigation] = useState(null);
     const [newStatus, setNewStatus] = useState('');
     const [newRole, setNewRole] = useState({ userId: '', role: '' });
     const [newTask, setNewTask] = useState({ title: '', description: '', dueDate: '' });
-    const [error, setError] = useState('');
+    const [, setError] = useState('');
 
-    useEffect(() => {
-        fetchInvestigation();
-    }, [id]);
-
-    const fetchInvestigation = async () => {
+    const fetchInvestigation = useCallback(async () => {
         try {
             const response = await getInvestigation(id);
             setInvestigation(response.data);
         } catch (err) {
             setError('Failed to fetch investigation');
         }
-    };
+    }, [id]);
 
-    const handleStatusUpdate = async () => {
+    useEffect(() => {
+        fetchInvestigation();
+    }, [fetchInvestigation]);
+
+    async function handleStatusUpdate() {
         try {
             await updateInvestigationStatus(id, newStatus);
             fetchInvestigation();
         } catch (err) {
             setError('Failed to update status');
         }
-    };
+    }
 
     const handleVote = async (contributionId, vote) => {
         try {

@@ -18,9 +18,10 @@ const UserProfile = () => {
             try {
                 const response = await getUserProfile(username);
                 setProfile(response.data);
-                setBio(response.data.bio);
-                setLocation(response.data.location);
+                setBio(response.data.bio || '');
+                setLocation(response.data.location || '');
             } catch (error) {
+                console.error('Failed to fetch user profile:', error);
                 setError('Failed to load user profile');
             } finally {
                 setLoading(false);
@@ -37,6 +38,7 @@ const UserProfile = () => {
             setProfile(response.data);
             setEditing(false);
         } catch (error) {
+            console.error('Failed to update profile:', error);
             setError('Failed to update profile');
         } finally {
             setLoading(false);
@@ -85,12 +87,16 @@ const UserProfile = () => {
                     <p><strong>Location</strong>{profile.location}</p>
                     <p><strong>Reputation Score</strong>{profile.reputation_score}</p>
                     <h3>Badges</h3>
-                    <ul>
-                        {profile.badges.map((badge) => (
-                            <li key={badge.id}>{badge.name} - {badge.description}</li>
-                        ))}
-                    </ul>
-                    {currentUser.User && currentUser.User.username === username && (
+                    {profile.badges && profile.badges.length > 0 ? (
+                        <ul>
+                            {profile.badges.map((badge) => (
+                                <li key={badge.id}>{badge.name} - {badge.description}</li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>No badges earned yet</p>
+                    )}
+                    {currentUser && currentUser.username === username && (
                         <button className='btn btn-primary' onClick={() => setEditing(true)}>
                             Edit Profile
                         </button>

@@ -18,36 +18,33 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const { user } = useContext(AuthContext);
+    const [totalPages, setTotalPages] = useState(1);
     
-    useEffect(() => {
-        const fetchReports = async () => {
-            try {
-                const response = await getReports(reportPage, reportFilters);
-                setReports(response.data.results);
-                setTotalPages(Math.ceil(response.data.count / 10));
-            } catch (err) {
-                setError('Failed to fetch reports');
-            }
-        };
-
-        const fetchInvestigations = async () => {
-            try {
-                const response = await getInvestigations(investigationPage, investigationFilters);
-                setInvestigations(response.data.results);
-                setTotalPages(Math.ceil(response.data.count / 10));
-            } catch (err) {
-                setError('Failed to fetch investigations');
-            }
-        };
-
+    useEffect(() => {        
         const fetchData = async () => {
             setLoading(true);
-            await Promise.all([fetchReports(), fetchInvestigations()]);
-            setLoading(false);
+            try {
+                const [reportsResponse, investigationsResponse] = await Promise.all([
+                    getReports(reportPage, reportFilters),
+                    getInvestigations(investigationPage, investigationFilters)
+                ]);
+                setReports(reportsResponse.data);
+                setInvestigations(investigationsResponse.data);
+                
+                const reportsTotalPages = Math.ceil(reportsResponse.data.count / 10);
+                const investigationsTotalPages = Math.ceil(investigationsResponse.data.count / 10);
+
+                setTotalPages(Math.max(reportsTotalPages, investigationsTotalPages));
+            } catch (err) {
+                setError('Failed to fetch data');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
         };
 
         fetchData();
-    }, [reportPage, reportFilters, investigationPage, investigationFilters]); // No need to include fetchReports and fetchInvestigations here
+    }, [reportPage, investigationPage, reportFilters, investigationFilters]);
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div className='alert alert-danger'>{error}</div>;
@@ -60,9 +57,13 @@ const Dashboard = () => {
                 <div className='col-md-6'>
                     <h3>Recent Reports</h3>
                     <SearchBar onSearch={setReportFilters} type='report' />
-                    {reports.map((report) => (
-                        <ReportCard key={report.id} report={report} />
-                    ))}
+                    {reports.results && reports.results.length > 0 ? (
+                        reports.results.map((report) => (
+                            <ReportCard key={report.id} report={report} />
+                        ))
+                    ) : (
+                        <p>No reports found.</p>
+                    )}
                     <Pagination
                         currentPage={reportPage}
                         onPageChange={setReportPage}
@@ -73,16 +74,18 @@ const Dashboard = () => {
                 <div className='col-md-6'>
                     <h3>Active Investigations</h3>
                     <SearchBar onSearch={setInvestigationFilters} type='investigation' />
-                    {investigations?.results?.map((investigation) => (
-                        <InvestigationCard key={investigation.id} investigation={investigation} />
-                    )) || <p>No investigation found.</p>}
-                    {investigations && investigations.count > 0 && (
-                        <Pagination
-                            currentPage={investigationPage}
-                            onPageChange={setInvestigationPage}
-                            totalPages={totalPages}
-                        />
+                    {investigations.results && investigations.results.length > 0 ? (
+                        investigations.results.map((investigation) => (
+                            <InvestigationCard key={investigation.id} investigation={investigation} />
+                        ))
+                    ) : (
+                        <p>No investigations found.</p>
                     )}
+                    <Pagination
+                        currentPage={investigationPage}
+                        onPageChange={setInvestigationPage}
+                        totalPages={totalPages}
+                    />
                 </div>
             </div>
         </div>

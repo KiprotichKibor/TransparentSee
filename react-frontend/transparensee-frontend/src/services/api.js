@@ -44,11 +44,17 @@ export const getReport = async (id) => {
 };
 
 export const createReport = async (formData) => {
-    return await api.post('/reports/', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    try {
+        const response = await api.post('/reports/', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('API Error:', error.response || error);
+        throw error;
+    }
 };
 
 export const getRegions = async () => {
@@ -93,7 +99,7 @@ export const createTask = async (investigationId, taskData) => {
 };
 
 export const getUserProfile = async (username) => {
-    return await api.get(`/users-profiles/${username}/`);
+    return await api.get(`/profiles/${username}/`);
 };
 
 export const updateProfile = async (username, data) => {

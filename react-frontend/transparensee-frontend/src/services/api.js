@@ -43,6 +43,14 @@ export const getReport = async (id) => {
     return await api.get(`/reports/${id}/`);
 };
 
+export const getRecentReports = async (limit) => {
+    return await api.get(`/reports/recent/?limit=${limit}`);
+  };
+  
+  export const getRecentInvestigations = async (limit) => {
+    return await api.get(`/investigations/recent/?limit=${limit}`);
+  };
+
 export const createReport = async (formData) => {
     try {
         const response = await api.post('/reports/', formData, {
@@ -109,6 +117,10 @@ export const createTask = async (investigationId, taskData) => {
 export const getUserProfile = async (username) => {
     return await api.get(`/profiles/${username}/`);
 };
+
+export const getUserStats = async (userId) => {
+    return await api.get(`/users/${userId}/stats/`);
+  };
 
 export const updateProfile = async (username, data) => {
     return await api.patch(`/users-profiles/${username}/`, data);

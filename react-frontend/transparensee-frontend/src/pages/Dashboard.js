@@ -1,91 +1,121 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { getReports, getInvestigations } from '../services/api';
+import { getRecentReports, getRecentInvestigations, getUserStats } from '../services/api';
 import ReportCard from '../components/ReportCard';
 import InvestigationCard from '../components/InvestigationCard';
-import Pagination from '../components/Pagination';
-import SearchBar from '../components/SearchBar';
 import DataVisualization from '../components/DataVisualization';
 
 const Dashboard = () => {
-    const [reports, setReports] = useState([]);
-    const [investigations, setInvestigations] = useState([]);
-    const [reportPage, setReportPage] = useState(1);
-    const [investigationPage, setInvestigationPage] = useState(1);
-    const [reportFilters, setReportFilters] = useState('');
-    const [investigationFilters, setInvestigationFilters] = useState('');
+    const { user } = useContext(AuthContext);
+    const [recentReports, setRecentReports] = useState([]);
+    const [recentInvestigations, setRecentInvestigations] = useState([]);
+    const [userStats, setUserStats] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const { user } = useContext(AuthContext);
-    const [totalPages, setTotalPages] = useState(1);
-    
-    useEffect(() => {        
-        const fetchData = async () => {
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
             setLoading(true);
             try {
-                const [reportsResponse, investigationsResponse] = await Promise.all([
-                    getReports(reportPage, reportFilters),
-                    getInvestigations(investigationPage, investigationFilters)
+                const [reportsResponse, investigationsResponse, statsResponse] = await Promise.all([
+                    getRecentReports(5),
+                    getRecentInvestigations(5),
+                    getUserStats(user.id)
                 ]);
-                setReports(reportsResponse.data);
-                setInvestigations(investigationsResponse.data);
-                
-                const reportsTotalPages = Math.ceil(reportsResponse.data.count / 10);
-                const investigationsTotalPages = Math.ceil(investigationsResponse.data.count / 10);
-
-                setTotalPages(Math.max(reportsTotalPages, investigationsTotalPages));
+                setRecentReports(reportsResponse.data);
+                setRecentInvestigations(investigationsResponse.data);
+                setUserStats(statsResponse.data);
             } catch (err) {
-                setError('Failed to fetch data');
+                setError('Failed to fetch dashboard data');
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchData();
-    }, [reportPage, investigationPage, reportFilters, investigationFilters]);
+        fetchDashboardData();
+    }, [user.id]);
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <div className="d-flex justify-content-center"><div className="spinner-border" role="status"></div></div>;
     if (error) return <div className='alert alert-danger'>{error}</div>;
 
     return (
         <div className='container mt-5'>
-            <h2>Welcome, {user.username}!</h2>
-            <DataVisualization />
-            <div className='row mt-4'>
+            <div className='row mb-4'>
+                <div className='col-md-8'>
+                    <h2>Welcome, {user.username}!</h2>
+                    <p>Your contributions are making a difference. Here's your impact so far:</p>
+                </div>
+                <div className='col-md-4 text-end'>
+                    <Link to='/submit-report' className='btn btn-primary'>Submit New Report</Link>
+                </div>
+            </div>
+
+            <div className='row mb-4'>
+                <div className='col-md-3'>
+                    <div className='card text-center'>
+                        <div className='card-body'>
+                            <h5 className='card-title'>{userStats?.totalReports || 0}</h5>
+                            <p className='card-text'>Reports Submitted</p>
+                        </div>
+                    </div>
+                </div>
+                <div className='col-md-3'>
+                    <div className='card text-center'>
+                        <div className='card-body'>
+                            <h5 className='card-title'>{userStats?.totalContributions || 0}</h5>
+                            <p className='card-text'>Contributions Made</p>
+                        </div>
+                    </div>
+                </div>
+                <div className='col-md-3'>
+                    <div className='card text-center'>
+                        <div className='card-body'>
+                            <h5 className='card-title'>{userStats?.reputationScore || 0}</h5>
+                            <p className='card-text'>Reputation Score</p>
+                        </div>
+                    </div>
+                </div>
+                <div className='col-md-3'>
+                    <div className='card text-center'>
+                        <div className='card-body'>
+                            <h5 className='card-title'>{userStats?.badgesEarned || 0}</h5>
+                            <p className='card-text'>Badges Earned</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className='row mb-4'>
                 <div className='col-md-6'>
-                    <h3>Recent Reports</h3>
-                    <SearchBar onSearch={setReportFilters} type='report' />
-                    {reports.results && reports.results.length > 0 ? (
-                        reports.results.map((report) => (
+                    <h3>Your Recent Reports</h3>
+                    {recentReports.length > 0 ? (
+                        recentReports.map((report) => (
                             <ReportCard key={report.id} report={report} />
                         ))
                     ) : (
-                        <p>No reports found.</p>
+                        <p>You haven't submitted any reports yet.</p>
                     )}
-                    <Pagination
-                        currentPage={reportPage}
-                        onPageChange={setReportPage}
-                        totalPages={totalPages}
-                    />
-                    <Link to='/submit-report' className='btn btn-primary mt-3'>Submit New Report</Link>
+                    <Link to='/reports' className='btn btn-outline-primary mt-2'>View All Reports</Link>
                 </div>
                 <div className='col-md-6'>
-                    <h3>Active Investigations</h3>
-                    <SearchBar onSearch={setInvestigationFilters} type='investigation' />
-                    {investigations.results && investigations.results.length > 0 ? (
-                        investigations.results.map((investigation) => (
+                    <h3>Recent Investigations</h3>
+                    {recentInvestigations.length > 0 ? (
+                        recentInvestigations.map((investigation) => (
                             <InvestigationCard key={investigation.id} investigation={investigation} />
                         ))
                     ) : (
-                        <p>No investigations found.</p>
+                        <p>No recent investigations.</p>
                     )}
-                    <Pagination
-                        currentPage={investigationPage}
-                        onPageChange={setInvestigationPage}
-                        totalPages={totalPages}
-                    />
+                    <Link to='/investigations' className='btn btn-outline-primary mt-2'>View All Investigations</Link>
+                </div>
+            </div>
+
+            <div className='row'>
+                <div className='col-12'>
+                    <h3>Platform Overview</h3>
+                    <DataVisualization />
                 </div>
             </div>
         </div>

@@ -4,6 +4,7 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import { UserRoleProvider, useIsAdmin, useIsModerator } from './context/UserRoleContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import InvestigationDetail from './components/InvestigationDetail';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -70,6 +71,7 @@ function App() {
               <Route path="/investigation/:id" element={<PrivateRoute element={<Investigation />} />} />
               <Route path="/profile/:username" element={<PrivateRoute element={<UserProfile />} />} />
               <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
+              <Route path="/investigation/:id" element={<PrivateRoute element={<InvestigationDetail />} />} />
               <Route path="/manage-reports" element={<ModeratorRoute element={<ManageReports />} />} />
             </Routes>
             <Footer />

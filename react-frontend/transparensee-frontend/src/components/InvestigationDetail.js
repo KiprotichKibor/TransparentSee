@@ -4,10 +4,10 @@ import { getInvestigation, addContribution } from '../services/api';
 import ContributionForm from './ContributionForm';
 
 const InvestigationDetail = () => {
-  const { id } = useParams();
-  const [investigation, setInvestigation] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+    const { id } = useParams();
+    const [investigation, setInvestigation] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchInvestigation = async () => {
@@ -47,12 +47,23 @@ const InvestigationDetail = () => {
       {investigation.contributions.map(contribution => (
         <div key={contribution.id} className="card mb-3">
           <div className="card-body">
-            <p>{contribution.content}</p>
-            <small>By: {contribution.user.username} on {new Date(contribution.created_at).toLocaleString()}</small>
+            <h5 className="card-title">{contribution.contribution_type}</h5>
+            <p className="card-text">{contribution.content}</p>
+            {contribution.evidence_file && (
+              <a href={contribution.evidence_file} target="_blank" rel="noopener noreferrer">View Evidence</a>
+            )}
+            <p className="card-text">
+              <small className="text-muted">
+                By: {contribution.user.username} on {new Date(contribution.created_at).toLocaleString()}
+              </small>
+            </p>
           </div>
         </div>
       ))}
-      <ContributionForm onSubmit={handleNewContribution} />
+      <ContributionForm 
+        investigationId={id} 
+        onContributionSubmit={handleNewContribution}
+      />
     </div>
   );
 };

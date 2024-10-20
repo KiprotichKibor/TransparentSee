@@ -62,7 +62,7 @@ export const getRegions = async () => {
 };
 
 export const startInvestigation = async (reportId) => {
-    return await api.post(`/reports/${reportId}/start-investigation/`);
+    return await api.post(`/reports/${reportId}/start_investigation/`);
 };
 
 export const updateInvestigationStatus = async (investigationId, status) => {
@@ -82,8 +82,12 @@ export const getInvestigation = async (id) => {
     return await api.get(`/investigations/${id}/`);
 };
 
-export const createContribution = async (investigationId, data) => {
-    return await api.post(`/investigations/${investigationId}/contributions/`, data);
+export const createContribution = async (investigationId, formData) => {
+    return await api.post(`/investigations/${investigationId}/contributions/`, formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
 };
 
 export const voteContribution = async (investiagtionId, contributionId, vote) => {

@@ -113,14 +113,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.userprofile
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='userprofile')
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(blank=True)
     location = models.CharField(max_length=255, blank=True, null=True)
     reputation_score = models.IntegerField(default=0)
     privacy_settings = models.JSONField(default=dict)
 
     def __str__(self):
-        return self.username
+        return self.user.username
     
     def calculate_level(self):
         level = self.reputation_score // 100
@@ -151,7 +151,7 @@ class Report(models.Model):
 
     title = models.CharField(max_length=255)
     description = models.TextField()
-    region = models.ForeignKey(Region, on_delete=models.CASCADE, null=True, blank=True)
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, null=True, blank=True, related_name='reports')
     user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True)
     anonymous = models.BooleanField(default=False)
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='pending')

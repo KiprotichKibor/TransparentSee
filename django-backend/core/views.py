@@ -1,3 +1,4 @@
+import datetime
 from tokenize import TokenError
 from django.forms import ValidationError
 from rest_framework import viewsets, status, permissions
@@ -12,7 +13,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.db import transaction
 from django.db.models import Q, Count
-from django.http import HttpResponse
+from django.http import HttpResponse, QueryDict
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils import timezone
@@ -24,6 +25,9 @@ from .permissions import IsOwnerOrReadOnly, CanManageInvestigation, CanGenerateC
 from core import serializers
 from io import BytesIO
 from dateutil.relativedelta import relativedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
@@ -108,6 +112,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, CanManageUserProfile]
+    lookup_field = 'user__username'
 
     @action(detail=True, methods=['get'])
     def get_level(self, request, pk=None):
@@ -159,8 +164,10 @@ class ReportViewSet(viewsets.ModelViewSet):
         if search:
             queryset = queryset.filter(Q(title__icontains=search) | Q(description__icontains=search))
         if start_date:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
             queryset = queryset.filter(created_at__gte=start_date)
         if end_date:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
             queryset = queryset.filter(created_at__lte=end_date)
         if status:
             queryset = queryset.filter(status=status)
@@ -177,34 +184,44 @@ class ReportViewSet(viewsets.ModelViewSet):
             serializer.save(user=request.user, report=report)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+        
+    @method_decorator(ratelimit(key='user', rate='5/m', method='POST', block=True))
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
-    @action(detail=False, methods=['post'])
-    @transaction.atomic
-    def submit_anonymously(self, request):
-        request.data['anonymous'] = True
-        return self.create(request)
-    
-    @method_decorator(ratelimit(key='user', rate='5/m', method='POST', block=True))
-    def create (self, request, *args, **kwargs):
+        logger.info(f'Received report submission: {request.data}')
+
+        mutable_data = request.data.copy() if isinstance(request.data, QueryDict) else request.data
+
         try:
-            if not enhanced_content_moderation(request.data.get('description', '')):
+            if not enhanced_content_moderation(mutable_data.get('description')):
+                logger.warning(f'Report submission blocked due to inappropriate content: {request.data}')
                 return Response({'detail': 'Your report contains inappropriate content.'}, status=status.HTTP_400_BAD_REQUEST)
             
-            serializer = self.get_serializer(data=request.data)
+            if mutable_data.get('anonymous') == 'true':
+                mutable_data['anonymous'] == True
+                mutable_data['user'] = None
+            else:
+                mutable_data['anonymous'] == False
+                mutable_data['user'] = request.user.id
+            
+            serializer = self.get_serializer(data=mutable_data)
             serializer.is_valid(raise_exception=True)
+            logger.info(f'Report submission passed content moderation: {request.data}')
             self.perform_create(serializer)
             headers = self.get_success_headers(serializer.data)
+            logger.info(f'Report created successfully')
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except ValidationError as e:
+            logger.error(f'Validation error: {str(e)}')
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f'An error occurred: {str(e)}')
+            return Response({'detail': 'An error occurred.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    def perform_create(self, serializer):
+        logger.info('Perfoming report creation')
+        serializer.save()
+        logger.info('Report created successfully')
 
     @method_decorator(cache_page(60 * 15))
     def list(self, request, *args, **kwargs):
@@ -224,12 +241,24 @@ class InvestigationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Investigation.objects.all()
         search = self.request.query_params.get('search', None)
+        start_date = self.request.query_params.get('start_date', None)
+        end_date = self.request.query_params.get('end_date', None)
         status = self.request.query_params.get('status', None)
+        region = self.request.query_params.get('region', None)
+
 
         if search:
             queryset = queryset.filter(Q(report__title__icontains=search) | Q(report__description__icontains=search))
+        if start_date:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+            queryset = queryset.filter(created_at__gte=start_date)
+        if end_date:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+            queryset = queryset.filter(created_at__lte=end_date)
         if status:
             queryset = queryset.filter(status=status)
+        if region:
+            queryset = queryset.filter(report__region__id=region)
 
         return queryset
     
@@ -557,7 +586,7 @@ def get_stats(request):
     reports_by_status = Report.objects.values('status').annotate(count=Count('id'))
 
     # Get counts for reports by region
-    reports_by_region = Report.objects.values('region_name').annotate(count=Count('id'))                                                 
+    reports_by_region = Report.objects.values('region__name').annotate(count=Count('id'))                                                 
 
     # Get counts for investigations by status
     investigations_by_status = Investigation.objects.values('status').annotate(count=Count('id'))

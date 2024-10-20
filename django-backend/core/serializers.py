@@ -81,13 +81,6 @@ class ReportSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         evidence_files = validated_data.pop('evidence_files', None)
-        anonymous = validated_data.pop('anonymous', False)
-
-        if anonymous:
-            validated_data['user'] = None
-        elif not validated_data.get('user'):
-            validated_data['user'] = self.context['request'].user
-
         report = Report.objects.create(**validated_data)
 
         if evidence_files:

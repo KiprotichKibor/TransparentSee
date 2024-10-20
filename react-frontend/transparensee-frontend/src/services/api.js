@@ -90,6 +90,10 @@ export const createContribution = async (investigationId, formData) => {
     });
 };
 
+export const addContribution = async (investigationId, data) => {
+    return await api.post(`/investigations/${investigationId}/contributions/`, data);
+};
+
 export const voteContribution = async (investiagtionId, contributionId, vote) => {
     return await api.post(`/investigations/${investiagtionId}/vote-contribution/`, { contribution_id: contributionId, vote });
 };

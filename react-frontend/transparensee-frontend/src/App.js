@@ -67,6 +67,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<PrivateRoute element={<Dashboard />} />} />
+              <Route path="/reports" element={<PrivateRoute element={<Reports />} />} />
               <Route path="/submit-report" element={<PrivateRoute element={<SubmitReport />} />} />
               <Route path="/investigation/:id" element={<PrivateRoute element={<Investigation />} />} />
               <Route path="/profile/:username" element={<PrivateRoute element={<UserProfile />} />} />

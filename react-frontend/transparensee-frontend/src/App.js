@@ -15,6 +15,7 @@ import UserProfile from './pages/UserProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageReports from './pages/ManageReports';
 import Reports from './pages/Reports';
+import ReportDetail from './pages/ReportDetail';
 import authService from './services/auth';
 
 const PrivateRoute = ({ element }) => {
@@ -75,6 +76,7 @@ function App() {
               <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
               <Route path="/investigation/:id" element={<PrivateRoute element={<InvestigationDetail />} />} />
               <Route path="/manage-reports" element={<ModeratorRoute element={<ManageReports />} />} />
+              <Route path="/report/:id" element={<PrivateRoute element={<ReportDetail />} />} />
               <Route path="/investigations" element={<PrivateRoute element={<Investigation />} />} />
             </Routes>
             <Footer />

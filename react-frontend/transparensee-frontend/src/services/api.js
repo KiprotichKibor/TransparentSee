@@ -30,25 +30,26 @@ api.interceptors.response.use(
     }
 );
 
-export const getReports = async (page = 1, search = '') => {
-    return await api.get('/reports/', {
-        params: {
-            page,
-            search,
-        },
-    });
-};
+export const getReports = async (params) => {
+    try {
+      const response = await api.get('/reports/', { params });
+      return response;
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+      throw error;
+    }
+  };
 
 export const getReport = async (id) => {
     return await api.get(`/reports/${id}/`);
 };
 
 export const getRecentReports = async (limit) => {
-    return await api.get(`/reports/recent/?limit=${limit}`);
+    return await api.get(`/dash-reports/recent/?limit=${limit}`);
   };
   
-  export const getRecentInvestigations = async (limit) => {
-    return await api.get(`/investigations/recent/?limit=${limit}`);
+export const getRecentInvestigations = async (limit) => {
+    return await api.get(`/dash-investigations/recent/?limit=${limit}`);
   };
 
 export const createReport = async (formData) => {
@@ -77,17 +78,26 @@ export const updateInvestigationStatus = async (investigationId, status) => {
     return await api.post(`/investigations/${investigationId}/update-status/`, { status });
 };
 
-export const getInvestigations = async (page = 1, search = '') => {
-    return await api.get('/investigations/', {
-        params: {
-            page,
-            search,
-        },
-    });
-};
+export const getInvestigations = async (params) => {
+    try {
+      const response = await api.get('/investigations/', { params });
+      return response;
+    } catch (error) {
+      console.error('Error fetching investigations:', error);
+      throw error;
+    }
+  };
+
 
 export const getInvestigation = async (id) => {
-    return await api.get(`/investigations/${id}/`);
+    if (!id) throw new Error('Investigation ID is missing');
+    try {
+        const response = await api.get(`/investigations/${id}/`);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch investigation:', error);
+        throw error;
+    }
 };
 
 export const createContribution = async (investigationId, formData) => {
@@ -119,11 +129,15 @@ export const getUserProfile = async (username) => {
 };
 
 export const getUserStats = async (userId) => {
-    return await api.get(`/users/${userId}/stats/`);
+    if (!userId) {
+        console.error('getUserStats called with undefined userId');
+        return Promise.reject('User ID is undefined')
+    }
+    return await api.get(`/dash-users/${userId}/stats/`);
   };
 
 export const updateProfile = async (username, data) => {
-    return await api.patch(`/users-profiles/${username}/`, data);
+    return await api.patch(`/profiles/${username}/`, data);
 };
 
 export const getNotifications = async () => {
@@ -159,7 +173,7 @@ export const updateUserRole = async (userId, role) => {
 };
 
 export const updateUserProfile = async (username, data) => {
-    return await api.patch(`/users-profiles/${username}/`, data);
+    return await api.patch(`/profiles/${username}/`, data);
 };
 
 export const updateReportStatus = async (reportId, status) => {

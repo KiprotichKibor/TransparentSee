@@ -4,7 +4,7 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import { UserRoleProvider, useIsAdmin, useIsModerator } from './context/UserRoleContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import InvestigationDetail from './components/InvestigationDetail';
+import InvestigationDetail from './pages/InvestigationDetail';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -14,7 +14,8 @@ import Investigation from './pages/Investigation';
 import UserProfile from './pages/UserProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageReports from './pages/ManageReports';
-import { getCurrentUser } from './services/auth';
+import Reports from './pages/Reports';
+import authService from './services/auth';
 
 const PrivateRoute = ({ element }) => {
   const { user } = useContext(AuthContext);
@@ -40,21 +41,21 @@ const ModeratorRoute = ({ element }) => {
 };
 
 function App() {
-  const { setUser } = useContext(AuthContext);
+  const { updateUser } = useContext(AuthContext);
 
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const user = await getCurrentUser();
+        const user = await authService.getCurrentUser();
         if (user) {
-          setUser(user);
+          updateUser(user);
         }
       } catch (error) {
         console.error('Failed to check user', error);
       }
     };
     checkUser();
-  }, [setUser]);
+  }, [updateUser]);
 
   return (
     <AuthProvider>
@@ -74,6 +75,7 @@ function App() {
               <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
               <Route path="/investigation/:id" element={<PrivateRoute element={<InvestigationDetail />} />} />
               <Route path="/manage-reports" element={<ModeratorRoute element={<ManageReports />} />} />
+              <Route path="/investigations" element={<PrivateRoute element={<Investigation />} />} />
             </Routes>
             <Footer />
           </div>

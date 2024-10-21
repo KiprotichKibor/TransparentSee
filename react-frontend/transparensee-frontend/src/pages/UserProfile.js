@@ -51,7 +51,7 @@ const UserProfile = () => {
 
     return (
         <div className='container mt-5'>
-            <h2>{profile.username}'s Profile</h2>
+            <h2>{username}'s Profile</h2>
             {editing ? (
                 <form onSubmit={handleSubmit}>
                     <div className='mb-3'>

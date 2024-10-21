@@ -59,9 +59,11 @@ const Investigation = ({ id }) => {
         }
     };
 
+    if (!investigation) return <div>Loading investigation...</div>;
+
     return (
         <div className='investigation-container'>
-            <h2>Investigation: {investigation.report.title}</h2>
+            <h2>Investigation: {investigation.report?.title}</h2>
             <div className='report-details card mb-3'>
                 <div className='card-body'>
                     <h5 className='card-title'>Report Details</h5>

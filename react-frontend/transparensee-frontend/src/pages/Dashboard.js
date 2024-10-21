@@ -21,21 +21,27 @@ const Dashboard = () => {
                 const [reportsResponse, investigationsResponse, statsResponse] = await Promise.all([
                     getRecentReports(5),
                     getRecentInvestigations(5),
-                    getUserStats(user.id)
+                    user?.id ? getUserStats(user.id) : Promise.resolve(null)
                 ]);
+                console.log('Recent Reports:', reportsResponse.data);
+                console.log('Recent Investigations:', investigationsResponse.data);
+                console.log('User Stats:', statsResponse.data);
+                
                 setRecentReports(reportsResponse.data);
                 setRecentInvestigations(investigationsResponse.data);
-                setUserStats(statsResponse.data);
+                if (statsResponse) setUserStats(statsResponse.data);
             } catch (err) {
+                console.error('Error fetching dashboard data:', err);
                 setError('Failed to fetch dashboard data');
-                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchDashboardData();
-    }, [user.id]);
+        if (user) {
+            fetchDashboardData();
+        }
+    }, [user]);
 
     if (loading) return <div className="d-flex justify-content-center"><div className="spinner-border" role="status"></div></div>;
     if (error) return <div className='alert alert-danger'>{error}</div>;

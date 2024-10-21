@@ -12,7 +12,7 @@ const Header = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (user) {
+      if (user && user.username) {
         try {
           const response = await getUserProfile(user.username);
           setUserProfile(response.data);

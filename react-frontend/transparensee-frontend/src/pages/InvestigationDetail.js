@@ -1,27 +1,37 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { getInvestigation, addContribution } from '../services/api';
-import ContributionForm from './ContributionForm';
+import ContributionForm from '../components/ContributionForm';
 
 const InvestigationDetail = () => {
     const { id } = useParams();
+    const navigate = useNavigate();
     const [investigation, setInvestigation] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchInvestigation = async () => {
+      if (!id) {
+        setError('Ivestigation ID is missing');
+        setLoading(false);
+        return;
+      }
       try {
-        const response = await getInvestigation(id);
-        setInvestigation(response.data);
+        const data = await getInvestigation(id);
+        setInvestigation(data);
       } catch (err) {
+        console.error('Failed to fetch investigation:', err);
         setError('Failed to fetch investigation');
+        if (err.response && err.response.status === 404) {
+          navigate('/404');
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchInvestigation();
-  }, [id]);
+  }, [id, navigate]);
 
   const handleNewContribution = async (contributionData) => {
     try {
@@ -41,7 +51,7 @@ const InvestigationDetail = () => {
 
   return (
     <div className="container mt-4">
-      <h2>Investigation: {investigation.report.title}</h2>
+      <h2>Investigation: {investigation.title}</h2>
       <p>Status: {investigation.status}</p>
       <h3>Contributions</h3>
       {investigation.contributions.map(contribution => (
@@ -54,7 +64,7 @@ const InvestigationDetail = () => {
             )}
             <p className="card-text">
               <small className="text-muted">
-                By: {contribution.user.username} on {new Date(contribution.created_at).toLocaleString()}
+                By: {contribution.username} on {new Date(contribution.created_at).toLocaleString()}
               </small>
             </p>
           </div>

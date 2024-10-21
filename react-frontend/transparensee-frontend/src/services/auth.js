@@ -5,10 +5,8 @@ const API_URL = 'http://localhost:8000/api/';
 const setAuthToken = (token) => {
   if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    localStorage.setItem('token', token);
   } else {
     delete axios.defaults.headers.common['Authorization'];
-    localStorage.removeItem('token');
   }
 };
 
@@ -22,11 +20,12 @@ export const register = async (email, username, firstName, lastName, password, c
       password,
       confirm_password: confirmPassword,
     });
-
-    if (response.data.token) {
-      setAuthToken(response.data.token);
+    console.log('Registration response:', response.data);
+    if (response.data.access) {
+      localStorage.setItem('access_token', response.data.access);
+      localStorage.setItem('refresh_token', response.data.refresh);
+      setAuthToken(response.data.access);
     }
-
     return response.data;
   } catch (error) {
     console.error('Registration API error:', error.response?.data || error); //  for debugging
@@ -36,27 +35,31 @@ export const register = async (email, username, firstName, lastName, password, c
 
 export const login = async (email, password) => {
   try {
-    const response = await axios.post(API_URL + 'login/', {
+    const response = await axios.post(API_URL + 'token/', {
       email,
       password,
     });
-    if (response.data.token) {
+    console.log('Login response:', response.data);
+    if (response.data.access) {
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
+      setAuthToken(response.data.access);
     }
     return response.data;
   } catch (error) {
-    throw error.response.data;
+    console.error('Login API error:', error.response?.data || error); //  for debugging
+    throw error.response?.data || error; // Return the error response data if available
   }
 };
 
 export const logout = () => {
   localStorage.removeItem('access_token');
   localStorage.removeItem('refresh_token');
+  setAuthToken(null);
 };
 
 export const getCurrentUser = async () => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('access_token');
   if (!token) {
     return null;
   }
@@ -65,32 +68,34 @@ export const getCurrentUser = async () => {
     const response = await axios.get(API_URL + 'user/');
     return response.data;
   } catch (error) {
-    logout();
-    throw error.response.data;
+    if (error.response && error.response.status === 401) {
+      const refreshed = await refreshToken();
+      if (refreshed) {
+        return getCurrentUser();
+      }
+    }
+    throw error;
   }
 };
 
-export const isAuthenticated = () => {
-  const token = localStorage.getItem('token');
-  return !!token;
-};
-
 export const refreshToken = async () => {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) {
+    logout();
+    return false;
+  }
   try {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
     const response = await axios.post(API_URL + 'token/refresh/', {
       refresh: refreshToken,
     });
     if (response.data.access) {
+      localStorage.setItem('access_token', response.data.access);
       setAuthToken(response.data.access);
+      return true;
     }
-    return response.data;
   } catch (error) {
     logout();
-    throw error.response.data;
+    return false;
   }
 };
 

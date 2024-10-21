@@ -11,6 +11,7 @@ const SubmitReport = () => {
     const [anonymous, setAnonymous] = useState(false);
     const [errors, setErrors] = useState('');
     const [loading, setLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -57,7 +58,10 @@ const SubmitReport = () => {
             console.log('Submitting report:', Object.fromEntries(formData));
             const response = await createReport(formData);
             console.log('Report submitted successfully:', response);
-            navigate('/dashboard');
+            setSuccessMessage('Report submitted successfully');
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, 2000);
         } catch (error) {
             console.error('Failed to submit report:', error);
             setErrors({ submit: 'Failed to submit report. Please try again later.'});
@@ -69,6 +73,7 @@ const SubmitReport = () => {
     return (
         <div className='container mt-5'>
             <h2>Submit a New Report</h2>
+            {successMessage && <div className='alert alert-success'>{successMessage}</div>}
             {errors.submit && <div className='alert alert-danger'>{errors.submit}</div>}
             <form onSubmit={handleSubmit}>
                 <div className='mb-3'>

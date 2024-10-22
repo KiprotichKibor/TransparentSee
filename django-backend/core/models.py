@@ -53,7 +53,7 @@ class Comment(models.Model):
         return f"Comment by {self.user.username} on {self.report.title}"
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, username, first_name, last_name, password=None):
+    def create_user(self, email, username, first_name, last_name, password=None, role='user'):
         if not email:
             raise ValueError('Users must have an email address')
         if not username:
@@ -72,6 +72,7 @@ class CustomUserManager(BaseUserManager):
 
         user.set_password(password)
         user.save(using=self._db)
+
         return user
 
     def create_superuser(self, email, username, first_name, last_name, password):
@@ -81,10 +82,13 @@ class CustomUserManager(BaseUserManager):
             first_name=first_name,
             last_name=last_name,
             password=password,
+            role='admin',
         )
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
+
+        UserRole.objects.filter(user=user).update(role='admin')
         return user
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -109,8 +113,17 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.username
     
     @property
-    def profile(self):
-        return self.userprofile
+    def user_role(self):
+        try:
+            return self.role.role
+        except UserRole.DoesNotExist:
+            return 'user'
+
+    def get_profile(self):
+        try:
+            return self.userprofile
+        except UserProfile.DoesNotExist:
+            return None
 
 class UserProfile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
@@ -136,10 +149,26 @@ class UserProfile(models.Model):
         self.save()
 
 @receiver(post_save, sender=CustomUser)
-def create_or_update_user_profile(sender, instance, created, **kwargs):
+def create_user_profile_and_role(sender, instance, created, **kwargs):
+    """Create UserProfile and UserRole for new users"""
     if created:
-        UserProfile.objects.create(user=instance)
-    instance.userprofile.save()
+        # Create UserProfile if it doesn't exist
+        UserProfile.objects.get_or_create(user=instance)
+        # Create UserRole if it doesn't exist
+        UserRole.objects.get_or_create(user=instance, defaults={'role': 'user'})
+
+@receiver(post_save, sender=CustomUser)
+def save_user_profile_and_role(sender, instance, **kwargs):
+    """Ensure UserProfile and UserRole exist for existing users"""
+    # Get or create UserProfile
+    profile, created = UserProfile.objects.get_or_create(user=instance)
+    if not created:
+        profile.save()
+    
+    # Get or create UserRole
+    role, created = UserRole.objects.get_or_create(user=instance, defaults={'role': 'user'})
+    if not created:
+        role.save()
 
 class Report(models.Model):
     STATUS_CHOICES = [

@@ -1,6 +1,7 @@
 import datetime
 from tokenize import TokenError
 from django.forms import ValidationError
+from django.db.models.functions import TruncDate
 from rest_framework import viewsets, status, permissions
 from .models import CustomUser, Region, Report, Evidence, Investigation, Contribution, CaseReport, UserActivity, Badge, UserProfile, UserRole, Notification, Comment
 from .serializers import CustomUserSerializer, RegionSerializer, ReportSerializer, EvidenceSerializer, InvestigationSerializer, ContributionSerializer, CaseReportSerializer, UserProfileSerializer, NotificationSerializer, CommentSerializer, UserRoleSerializer
@@ -12,8 +13,9 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Min, F
 from django.http import HttpResponse, QueryDict
+from django.core.paginator import Paginator, EmptyPage
 from django.template.loader import render_to_string
 from django.utils.decorators import method_decorator
 from django.utils import timezone
@@ -26,6 +28,8 @@ from core import serializers
 from io import BytesIO
 from dateutil.relativedelta import relativedelta
 import logging
+
+from core import models
 
 logger = logging.getLogger(__name__)
 
@@ -86,36 +90,30 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()  # Blacklist the refresh token
-            return Response({"detail": "Logout successful."}, status=200)
+            return Response({'detail': 'Logout successful.'}, status=200)
         except Exception as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-'''
-    @action(detail=False, methods=['post'], url_path='logout')
-    def logout(self, request):
-        try:
-            refresh_token = request.data.get('refresh_token')
-            if not refresh_token:
-                return Response({'error': 'Refresh token is required.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-            return Response({'detail': 'Logout successful.'}, status=status.HTTP_200_OK)
-        except TokenError as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            return Response({'error': 'An unexpected error occurred.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-'''
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, CanManageUserProfile]
     lookup_field = 'user__username'
+    lookup_url_kwarg = 'username'
+
+    def get_object(self):
+        username = self.kwargs.get(self.lookup_url_kwarg)
+        if username == 'me' or username is None:
+            return self.request.user.profile
+        return super().get_object()
+    
+    @action(detail=False, methods=['get'])
+    def me(self, request):
+        serializer = self.get_serializer(request.user.profile)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
-    def get_level(self, request, pk=None):
+    def get_level(self, request, username=None):
         profile = self.get_object()
         level, next_level_threshold = profile.calculate_level()
         return Response({
@@ -125,7 +123,7 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         })
     
     @action(detail=True, methods=['post'])
-    def update_privacy(self, request, pk=None):
+    def update_privacy(self, request, username=None):
         profile = self.get_object()
         privacy_settings = request.data.get('privacy_settings', {})
         profile.update_privacy_settings(privacy_settings)
@@ -134,7 +132,11 @@ class UserProfileViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_role(request):
-    return Response({'role': request.user.role.role})
+    try:
+        role = request.user.role.role
+    except AttributeError:
+        role = 'user'  # Default role if none exists
+    return Response({'role': role})
 
 class RegionViewSet(viewsets.ModelViewSet):
     queryset = Region.objects.all()
@@ -446,56 +448,6 @@ class BadgeViewSet(viewsets.ModelViewSet):
             permission_classes = [permissions.IsAdminUser]
         return [permission() for permission in permission_classes]
 
-''' 
-    @action(detail=True, methods=['get'])
-    def award_to_user(self, request, pk=None):
-        badge = self.get_object()
-        username = request.query_params.get('username')
-        if username is None:
-            return Response({'detail': 'Username not provided.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            user = UserProfile.objects.get(user__username=username)
-        except UserProfile.DoesNotExist:
-            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        user.badges.add(badge)
-        user.save()
-        
-        return Response({'detail': f'Badge {badge.name} awarded to {username} successfully.'})
-    
-    @action(detail=True, methods=['get'])
-    def remove_from_user(self, request, pk=None):
-        badge = self.get_object()
-        username = request.query_params.get('username')
-        if username is None:
-            return Response({'detail': 'Username not provided.'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        try:
-            user = UserProfile.objects.get(user__username=username)
-        except UserProfile.DoesNotExist:
-            return Response({'detail': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-        
-        user.badges.remove(badge)
-        user.save()
-        
-        return Response({'detail': f'Badge {badge.name} removed from {username} successfully.'})
-    
-    @action(detail=True, methods=['get'])
-    def list_users(self, request, pk=None):
-        badge = self.get_object()
-        users = UserProfile.objects.filter(badges=badge)
-        serializer = serializers.UserProfileSerializer(users, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['get'])
-    def list_badges(self, request, pk=None):
-        badge = self.get_object()
-        users = UserProfile.objects.filter(badges=badge)
-        serializer = serializers.UserProfileSerializer(users, many=True)
-        return Response(serializer.data)
-'''
-
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -591,21 +543,150 @@ def get_stats(request):
     # Get counts for investigations by status
     investigations_by_status = Investigation.objects.values('status').annotate(count=Count('id'))
 
-    # Get Reports over time (last 6 months)
+    # Get Reports over time (last 30 days)
     end_date = timezone.now().date()
-    start_date = end_date - relativedelta(months=6)
+    start_date = end_date - datetime.timedelta(days=30)
     reports_over_time = (
         Report.objects
         .filter(created_at__date__range=[start_date, end_date])
-        .extra({'date': "date(created_at)"})
+        .annotate(date=TruncDate('created_at'))
         .values('date')
         .annotate(count=Count('id'))
         .order_by('date')
     )
 
+    # User activity over time (last 30 days)
+    user_reports = (
+        Report.objects
+        .filter(created_at__date__range=[start_date, end_date])
+        .annotate(date=TruncDate('created_at'))
+        .values('date', 'user')
+    )
+    user_contributions = (
+        Contribution.objects
+        .filter(created_at__date__range=[start_date, end_date])
+        .annotate(date=TruncDate('created_at'))
+        .values('date', 'user')
+    )
+    user_activity = {}
+    for item in user_reports.union(user_contributions).order_by('date'):
+        date_str = item['date'].strftime('%Y-%m-%d')
+        if date_str not in user_activity:
+            user_activity[date_str] = {
+                'newUsers': set(),
+                'activeUsers': set()
+            }
+        user_activity[date_str]['activeUsers'].add(item['user'])
+        user_activity[date_str]['newUsers'].add(item['user'])
+
+    
+    # Count new users
+    all_users = set()
+    for date in sorted(user_activity.keys()):
+        new_users = user_activity[date]['newUsers'] - all_users
+        user_activity[date]['newUsers'] = len(new_users)
+        user_activity[date]['activeUsers'] = len(user_activity[date]['activeUsers'])
+        all_users.update(new_users)
+
+    user_activity_list = [
+        {'date': date, 'newUsers': data['newUsers'], 'activeUsers': data['activeUsers']}
+        for date, data in user_activity.items()
+    ]
+
     return Response({
-        'reportsByStatus': reports_by_status,
-        'reportsByRegion': reports_by_region,
-        'investigationsByStatus': investigations_by_status,
-        'reportsOverTime': reports_over_time,
+        'reportsByStatus': list(reports_by_status),
+        'reportsByRegion': list(reports_by_region),
+        'investigationsByStatus': list(investigations_by_status),
+        'reportsOverTime': list(reports_over_time),
+        'userActivityOverTime': user_activity_list
     })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_reports(request):
+    page = int(request.GET.get('page', 1))
+    search = request.GET.get('search', '')
+
+    reports = Report.objects.all()
+    if search:
+        reports = reports.filter(Q(title__icontains=search) | Q(description__icontains=search))
+
+    paginator = Paginator(reports, 10)
+
+    try:
+        reports_page = paginator.page(page)
+    except EmptyPage:
+        reports_page = paginator.page(paginator.num_pages)
+
+    serializer = ReportSerializer(reports_page, many=True)
+    return Response({
+        'results': serializer.data,
+        'count': paginator.count,
+        'num_pages': paginator.num_pages,
+    })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_recent_reports(request):
+    limit = int(request.GET.get('limit', 5))
+    reports = Report.objects.order_by('-created_at')[:limit]
+    serializer = ReportSerializer(reports, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_recent_investigations(request):
+    limit = int(request.GET.get('limit', 5))
+    investigations = Investigation.objects.order_by('-created_at')[:limit]
+    serializer = InvestigationSerializer(investigations, many=True)
+    return Response(serializer.data)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_stats(request, user_id):
+    print(f"Fetching stats for user_id: {user_id}")
+    try:
+        user = CustomUser.objects.get(id=user_id)
+        
+        # Get total reports
+        total_reports = Report.objects.filter(user=user).count()
+        
+        # Get total contributions
+        total_contributions = Contribution.objects.filter(user=user).count()
+        
+        # Get reputation score
+        reputation_score = getattr(user, 'reputation_score', 0)
+        
+        # Get badges earned
+        badges_earned = 0
+        if hasattr(user, 'badges'):
+            badges_earned = user.badges.count()
+        elif hasattr(user, 'userprofile') and hasattr(user.profile, 'badges'):
+            badges_earned = user.userprofile.badges.count()
+        else:
+            # badges_earned = Badge.objects.filter(user=user).count()
+            pass
+
+        stats = {
+            'totalReports': total_reports,
+            'totalContributions': total_contributions,
+            'reputationScore': reputation_score,
+            'badgesEarned': badges_earned
+        }
+        print(f"User stats: {stats}")
+        return Response(stats)
+    except CustomUser.DoesNotExist:
+        return Response({'error': f'User with id {user_id} not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        print(f"Error in get_user_stats: {str(e)}")
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def start_investigation(request, pk):
+    try:
+        report = Report.objects.get(pk=pk)
+        investigation = Investigation.objects.create(report=report)
+        return Response({'message': 'Investigation started', 'id': investigation.id}, status=status.HTTP_201_CREATED)
+    except Report.DoesNotExist:
+        return Response({'error': 'Report not found'}, status=status.HTTP_404_NOT_FOUND)

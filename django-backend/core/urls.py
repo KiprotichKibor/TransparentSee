@@ -18,7 +18,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 router = DefaultRouter()
 router.register(r'users', CustomUserViewSet)
-router.register(r'profiles', UserProfileViewSet)
+router.register(r'profiles', UserProfileViewSet, basename='profile')
 router.register (r'user-roles', UserRoleViewSet)
 router.register(r'regions', RegionViewSet)
 router.register(r'reports', ReportViewSet)

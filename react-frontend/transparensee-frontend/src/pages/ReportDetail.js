@@ -31,7 +31,7 @@ const ReportDetail = () => {
   return (
     <div className='container mt-4'>
       <h2>{report.title}</h2>
-      <p><strong>Region:</strong> {report.region.name}</p>
+      <p><strong>Region:</strong> {report?.region?.name || 'N/A'}</p>
       <p><strong>Status:</strong> {report.status}</p>
       <p><strong>Submitted on:</strong> {new Date(report.created_at).toLocaleDateString()}</p>
       <h3>Description</h3>

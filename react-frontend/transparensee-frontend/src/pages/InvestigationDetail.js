@@ -13,7 +13,7 @@ const InvestigationDetail = () => {
   useEffect(() => {
     const fetchInvestigation = async () => {
       if (!id) {
-        setError('Ivestigation ID is missing');
+        setError('Investigation ID is missing');
         setLoading(false);
         return;
       }

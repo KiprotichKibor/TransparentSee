@@ -1,0 +1,299 @@
+/* Data Table Styles */
+.data-table-container {
+    background: var(--background);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+  
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+  }
+  
+  /* Table Header */
+  .data-table thead th {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    padding: var(--spacing-md) var(--spacing-lg);
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  
+  .data-table th.sortable {
+    cursor: pointer;
+    padding-right: calc(var(--spacing-lg) + 20px);
+    position: relative;
+  }
+  
+  .data-table th.sortable::after {
+    content: '↕';
+    position: absolute;
+    right: var(--spacing-md);
+    opacity: 0.5;
+  }
+  
+  .data-table th.sort-asc::after {
+    content: '↑';
+    opacity: 1;
+  }
+  
+  .data-table th.sort-desc::after {
+    content: '↓';
+    opacity: 1;
+  }
+  
+  /* Table Body */
+  .data-table tbody tr {
+    transition: background-color 0.2s ease;
+  }
+  
+  .data-table tbody tr:hover {
+    background-color: var(--surface);
+  }
+  
+  .data-table td {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border);
+  }
+  
+  /* Status Colors */
+  .data-table td.status-cell {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+  
+  .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  
+  .status-active { background-color: var(--success); }
+  .status-pending { background-color: var(--warning); }
+  .status-inactive { background-color: var(--danger); }
+  
+  /* Table Footer */
+  .data-table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  
+  /* Pagination */
+  .pagination {
+    display: flex;
+    gap: var(--spacing-xs);
+    align-items: center;
+  }
+  
+  .pagination-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--background);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .pagination-button:hover {
+    background: var(--surface);
+    border-color: var(--primary);
+  }
+  
+  .pagination-button.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+  
+  .pagination-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  /* Table Search and Filters */
+  .table-controls {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+  }
+  
+  .table-search {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+  
+  .table-search input {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    padding-left: calc(var(--spacing-md) + 24px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--background);
+  }
+  
+  .table-search::before {
+    content: '🔍';
+    position: absolute;
+    left: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+  }
+  
+  /* Chart Styles */
+  .chart-container {
+    background: var(--background);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: var(--spacing-xl);
+  }
+  
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .chart-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  
+  .chart-legend {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+  
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+  }
+  
+  /* Chart Tooltip */
+  .chart-tooltip {
+    background: var(--background);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .tooltip-label {
+    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text);
+  }
+  
+  .tooltip-value {
+    color: var(--text-secondary);
+  }
+  
+  /* Chart Grid Lines */
+  .chart-grid line {
+    stroke: var(--border);
+    stroke-opacity: 0.5;
+    stroke-dasharray: 3;
+  }
+  
+  /* Empty State */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-xl);
+    text-align: center;
+    color: var(--text-secondary);
+  }
+  
+  .empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .data-table-container {
+      overflow-x: auto;
+    }
+    
+    .table-controls {
+      flex-direction: column;
+    }
+    
+    .table-search {
+      width: 100%;
+    }
+    
+    .chart-header {
+      flex-direction: column;
+      gap: var(--spacing-md);
+    }
+    
+    .chart-legend {
+      justify-content: center;
+    }
+  }
+  
+  /* Dark Mode Adjustments */
+  [data-theme='dark'] .data-table thead th {
+    background: var(--surface-dark);
+  }
+  
+  [data-theme='dark'] .chart-tooltip {
+    background: var(--surface-dark);
+    border-color: var(--border-dark);
+  }
+  
+  /* Print Optimizations */
+  @media print {
+    .data-table-container {
+      box-shadow: none;
+    }
+    
+    .data-table th {
+      background: white !important;
+      color: black !important;
+    }
+    
+    .table-controls,
+    .data-table-footer {
+      display: none;
+    }
+    
+    .chart-container {
+      break-inside: avoid;
+      box-shadow: none;
+    }
+  }

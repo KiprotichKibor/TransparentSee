@@ -1,4 +1,5 @@
 import React, { useContext, useEffect } from 'react';
+import { getCurrentUser } from './services/auth';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { UserRoleProvider, useIsAdmin, useIsModerator } from './context/UserRoleContext';
@@ -16,7 +17,8 @@ import AdminDashboard from './pages/AdminDashboard';
 import ManageReports from './pages/ManageReports';
 import Reports from './pages/Reports';
 import ReportDetail from './pages/ReportDetail';
-import authService from './services/auth';
+import './styles/main.css';
+import './styles/utilities.css';
 
 const PrivateRoute = ({ element }) => {
   const { user } = useContext(AuthContext);
@@ -42,21 +44,21 @@ const ModeratorRoute = ({ element }) => {
 };
 
 function App() {
-  const { updateUser } = useContext(AuthContext);
+  const { setUser } = useContext(AuthContext);
 
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const user = await authService.getCurrentUser();
+        const user = await getCurrentUser();
         if (user) {
-          updateUser(user);
+          setUser(user);
         }
       } catch (error) {
         console.error('Failed to check user', error);
       }
     };
     checkUser();
-  }, [updateUser]);
+  }, [setUser]);
 
   return (
     <AuthProvider>
@@ -74,7 +76,7 @@ function App() {
               <Route path="/investigation/:id" element={<PrivateRoute element={<Investigation />} />} />
               <Route path="/profile/:username" element={<PrivateRoute element={<UserProfile />} />} />
               <Route path="/admin" element={<AdminRoute element={<AdminDashboard />} />} />
-              <Route path="/investigation/:id" element={<PrivateRoute element={<InvestigationDetail />} />} />
+              <Route path="/investigation-detail/:id" element={<PrivateRoute element={<InvestigationDetail />} />} />
               <Route path="/manage-reports" element={<ModeratorRoute element={<ManageReports />} />} />
               <Route path="/report/:id" element={<PrivateRoute element={<ReportDetail />} />} />
               <Route path="/investigations" element={<PrivateRoute element={<Investigation />} />} />
@@ -85,6 +87,6 @@ function App() {
       </UserRoleProvider>
     </AuthProvider>
   );
-}
+};
 
 export default App;

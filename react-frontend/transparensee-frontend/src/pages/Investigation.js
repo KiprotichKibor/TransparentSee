@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getInvestigation } from '../services/api';
 import ContributionForm from '../components/ContributionForm';
-import './Investigation.css';
+import '../styles/pages/Investigation.css';
 
 const Investigation = () => {
     const { id } = useParams();

@@ -1,0 +1,30 @@
+.investigation-timeline {
+    position: relative;
+    padding-left: var(--spacing-xl);
+  }
+  
+  .timeline-item {
+    position: relative;
+    padding-bottom: var(--spacing-lg);
+  }
+  
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--spacing-xl));
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background-color: var(--border);
+  }
+  
+  .timeline-item::after {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--spacing-xl) - 4px);
+    top: 0;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--primary);
+  }

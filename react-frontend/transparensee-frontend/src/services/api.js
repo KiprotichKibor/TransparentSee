@@ -137,7 +137,7 @@ export const getUserStats = async (userId) => {
   };
 
 export const updateProfile = async (username, data) => {
-    return await api.patch(`/profiles/${username}/`, data);
+    return await api.patch(`/profile/${username}/`, data);
 };
 
 export const getNotifications = async () => {
@@ -161,7 +161,7 @@ export const getStats = async () => {
 };
 
 export const getUserRole = async () => {
-    return await api.get('/user-roles/');
+    return await api.get('/user-role/');
 };
 
 export const getUsers = async () => {
@@ -173,7 +173,7 @@ export const updateUserRole = async (userId, role) => {
 };
 
 export const updateUserProfile = async (username, data) => {
-    return await api.patch(`/profiles/${username}/`, data);
+    return await api.patch(`/profile/${username}/`, data);
 };
 
 export const updateReportStatus = async (reportId, status) => {

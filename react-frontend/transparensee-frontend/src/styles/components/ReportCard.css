@@ -1,0 +1,35 @@
+.report-card {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  
+  .report-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+  
+  .report-status {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  
+  .status-pending {
+    background-color: var(--warning);
+    color: white;
+  }
+  
+  .status-investigating {
+    background-color: var(--primary);
+    color: white;
+  }
+  
+  .status-resolved {
+    background-color: var(--success);
+    color: white;
+  }

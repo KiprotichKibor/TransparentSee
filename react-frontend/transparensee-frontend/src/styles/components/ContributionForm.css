@@ -1,0 +1,32 @@
+.contribution-form {
+    background: var(--background);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .form-group {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .contribution-type-selector {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .type-option {
+    flex: 1;
+    padding: var(--spacing-sm);
+    text-align: center;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .type-option.active {
+    border-color: var(--primary);
+    background-color: var(--primary);
+    color: white;
+  }  

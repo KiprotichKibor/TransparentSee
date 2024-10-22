@@ -6,6 +6,7 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
     const { loginUser } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -13,6 +14,7 @@ const Login = () => {
         e.preventDefault();
         try {
             await loginUser(email, password);
+            setSuccessMessage('Login successful');
             navigate('/dashboard');
         } catch (err) {
             console.error('Login failed', err);
@@ -23,6 +25,7 @@ const Login = () => {
     return (
         <div className='container mt-5'>
             <h2>Login</h2>
+            {successMessage && <div className='alert alert-success'>{successMessage}</div>}
             {error && <div className='alert alert-danger'>{error}</div>}
             <form onSubmit={handleSubmit}>
                 <div className='mb-3'>

@@ -5,6 +5,7 @@ import { getRecentReports, getRecentInvestigations, getUserStats } from '../serv
 import ReportCard from '../components/ReportCard';
 import InvestigationCard from '../components/InvestigationCard';
 import DataVisualization from '../components/DataVisualization';
+import '../styles/pages/Dashboard.css';
 
 const Dashboard = () => {
     const { user } = useContext(AuthContext);

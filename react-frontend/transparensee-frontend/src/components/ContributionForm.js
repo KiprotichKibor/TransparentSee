@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createContribution } from '../services/api';
-import './ContributionForm.css';
+import '../styles/components/ContributionForm.css';
 
 const ContributionForm = ({ investigationId, onContributionSubmit }) => {
   const [content, setContent] = useState('');

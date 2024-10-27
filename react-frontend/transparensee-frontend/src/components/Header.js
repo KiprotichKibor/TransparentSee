@@ -36,7 +36,7 @@ const Header = () => {
             <>
               <Link className="nav-item nav-link" to="/dashboard">Dashboard</Link>
               <Link className="nav-item nav-link" to="/reports">Reports</Link>
-              <Link className="nav-item nav-link" to="/investigation">Investigation</Link>
+              <Link className="nav-item nav-link" to="/investigations">Investigation</Link>
               <Link className="nav-item nav-link" to="/submit-report">Submit Report</Link>
               {(isAdmin || isModerator) && (
                 <Link className="nav-item nav-link" to="/manage-reports">Manage Reports</Link>
